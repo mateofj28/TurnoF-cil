@@ -452,51 +452,42 @@ export default function App() {
   const renderResumen = () => {
     const totalAsignados = new Set(Object.values(asignaciones).flat()).size;
     const totalPuestos = puestos.length;
+    const cubiertos = Object.values(asignaciones).filter((a) => a.length > 0).length;
     return (
       <Animated.View entering={slideEnter} key="step-3" style={styles.stepContent}>
-        <View style={styles.statsRow}>
-          <Animated.View entering={FadeInUp.delay(100).duration(400)} style={styles.statCard}>
-            <Text style={styles.statNumber}>{totalPuestos}</Text>
-            <Text style={styles.statLabel}>Puestos</Text>
-          </Animated.View>
-          <Animated.View entering={FadeInUp.delay(200).duration(400)} style={styles.statCard}>
-            <Text style={styles.statNumber}>{totalAsignados}</Text>
-            <Text style={styles.statLabel}>Personas</Text>
-          </Animated.View>
-          <Animated.View entering={FadeInUp.delay(300).duration(400)} style={styles.statCard}>
-            <Text style={[styles.statNumber, { color: COLORS.success }]}>
-              {Object.values(asignaciones).filter((a) => a.length > 0).length}
-            </Text>
-            <Text style={styles.statLabel}>Cubiertos</Text>
-          </Animated.View>
+        <View style={styles.statsRowCompact}>
+          <Text style={styles.statInline}>
+            <Text style={styles.statInlineNum}>{totalPuestos}</Text> puestos  ·  <Text style={styles.statInlineNum}>{totalAsignados}</Text> personas  ·  <Text style={[styles.statInlineNum, { color: COLORS.success }]}>{cubiertos}</Text> cubiertos
+          </Text>
         </View>
         <ScrollView showsVerticalScrollIndicator={false}>
-          {puestos.map((puesto, i) => {
-            const assigned = asignaciones[puesto] || [];
-            const hasAssigned = assigned.length > 0;
-            return (
-              <Animated.View key={puesto} entering={FadeInDown.delay(i * 100).duration(400)}>
-                <View style={[styles.resumenCard, !hasAssigned && styles.resumenCardEmpty]}>
-                  <View style={styles.resumenHeader}>
-                    <View style={[styles.resumenDot, hasAssigned ? styles.resumenDotOk : styles.resumenDotWarn]} />
-                    <Text style={styles.resumenPuesto}>{puesto}</Text>
-                    <Text style={styles.resumenCount}>{assigned.length} persona{assigned.length !== 1 ? 's' : ''}</Text>
-                  </View>
-                  {hasAssigned ? (
-                    <View style={styles.resumenPersonas}>
-                      {assigned.map((persona) => (
-                        <View key={persona} style={styles.resumenChip}>
-                          <Text style={styles.resumenChipText}>{persona}</Text>
-                        </View>
-                      ))}
+          <View style={[styles.resumenGrid, isWide && styles.resumenGridWide]}>
+            {puestos.map((puesto, i) => {
+              const assigned = asignaciones[puesto] || [];
+              const hasAssigned = assigned.length > 0;
+              return (
+                <Animated.View key={puesto} entering={FadeInDown.delay(i * 60).duration(300)} style={[styles.resumenGridItem, isWide && styles.resumenGridItemWide]}>
+                  <View style={[styles.resumenCard, !hasAssigned && styles.resumenCardEmpty]}>
+                    <View style={styles.resumenHeader}>
+                      <View style={[styles.resumenDot, hasAssigned ? styles.resumenDotOk : styles.resumenDotWarn]} />
+                      <Text style={styles.resumenPuesto} numberOfLines={1}>{puesto}</Text>
                     </View>
-                  ) : (
-                    <Text style={styles.resumenEmpty}>Sin personas asignadas</Text>
-                  )}
-                </View>
-              </Animated.View>
-            );
-          })}
+                    {hasAssigned ? (
+                      <View style={styles.resumenPersonas}>
+                        {assigned.map((persona) => (
+                          <View key={persona} style={styles.resumenChip}>
+                            <Text style={styles.resumenChipText} numberOfLines={1}>{persona}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    ) : (
+                      <Text style={styles.resumenEmpty}>Sin asignar</Text>
+                    )}
+                  </View>
+                </Animated.View>
+              );
+            })}
+          </View>
         </ScrollView>
       </Animated.View>
     );
@@ -1058,6 +1049,25 @@ const styles = StyleSheet.create({
     gap: 10,
     marginBottom: 20,
   },
+  statsRowCompact: {
+    marginBottom: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: COLORS.bg,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  statInline: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+  },
+  statInlineNum: {
+    fontWeight: '800',
+    fontSize: 15,
+    color: COLORS.primary,
+  },
   statCard: {
     flex: 1,
     backgroundColor: COLORS.bg,
@@ -1080,23 +1090,37 @@ const styles = StyleSheet.create({
   },
   resumenCard: {
     backgroundColor: COLORS.bg,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 10,
+    borderRadius: 10,
+    padding: 12,
     borderWidth: 1,
     borderColor: COLORS.border,
-    borderLeftWidth: 4,
+    borderLeftWidth: 3,
     borderLeftColor: COLORS.success,
+    flex: 1,
   },
   resumenCardEmpty: {
     borderLeftColor: COLORS.textMuted,
-    opacity: 0.7,
+    opacity: 0.6,
+  },
+  resumenGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  resumenGridWide: {
+    gap: 10,
+  },
+  resumenGridItem: {
+    width: '100%',
+  },
+  resumenGridItemWide: {
+    width: '48.5%',
   },
   resumenHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 10,
+    gap: 6,
+    marginBottom: 6,
   },
   resumenDot: {
     width: 8,
@@ -1111,14 +1135,9 @@ const styles = StyleSheet.create({
   },
   resumenPuesto: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
     color: COLORS.text,
-  },
-  resumenCount: {
-    fontSize: 12,
-    color: COLORS.textMuted,
-    fontWeight: '500',
   },
   resumenPersonas: {
     flexDirection: 'row',
@@ -1127,17 +1146,17 @@ const styles = StyleSheet.create({
   },
   resumenChip: {
     backgroundColor: COLORS.primaryBg,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
   },
   resumenChipText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
     color: COLORS.primary,
   },
   resumenEmpty: {
-    fontSize: 13,
+    fontSize: 12,
     color: COLORS.textMuted,
     fontStyle: 'italic',
   },
