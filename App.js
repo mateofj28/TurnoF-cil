@@ -46,7 +46,7 @@ const COLORS = {
 };
 
 const STORAGE_KEYS = { puestos: '@puestos', personas: '@personas' };
-const MAX_ASIGNACIONES_POR_PERSONA = 2;
+const MAX_ASIGNACIONES_POR_PERSONA = 1;
 
 const capitalize = (str) =>
   str.replace(/\b\w/g, (c) => c.toUpperCase());
@@ -368,7 +368,7 @@ export default function App() {
                   <View>
                     <Text style={[styles.assignText, isAssigned && styles.assignTextActive, isMaxed && styles.assignTextDisabled]}>{item}</Text>
                     {totalCount > 0 && (
-                      <Text style={styles.assignCountHint}>{totalCount}/{MAX_ASIGNACIONES_POR_PERSONA} puestos asignados</Text>
+                      <Text style={styles.assignCountHint}>Ya asignado a otro puesto</Text>
                     )}
                   </View>
                 </View>
