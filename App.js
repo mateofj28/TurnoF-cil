@@ -315,6 +315,88 @@ export default function App() {
     </Animated.View>
   );
 
+  const renderPuestosList = () => (
+    <ScrollView showsVerticalScrollIndicator={false} style={isWide ? styles.puestosCol : undefined}>
+      {puestos.map((p, i) => {
+        const isActive = selectedPuesto === p;
+        const count = (asignaciones[p] || []).length;
+        return (
+          <Animated.View key={p} entering={FadeInDown.delay(i * 60).duration(300)}>
+            <TouchableOpacity
+              style={[styles.puestoItem, isActive && styles.puestoItemActive]}
+              onPress={() => setSelectedPuesto(p)}
+              activeOpacity={0.8}
+            >
+              <View style={styles.puestoItemLeft}>
+                <View style={[styles.puestoDot, isActive && styles.puestoDotActive]} />
+                <Text style={[styles.puestoItemText, isActive && styles.puestoItemTextActive]}>{p}</Text>
+              </View>
+              {count > 0 && (
+                <View style={[styles.badge, isActive && styles.badgeActive]}>
+                  <Text style={[styles.badgeText, isActive && styles.badgeTextActive]}>{count}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </Animated.View>
+        );
+      })}
+    </ScrollView>
+  );
+
+  const renderPersonasList = () => (
+    selectedPuesto ? (
+      <FlatList
+        data={personas}
+        keyExtractor={(item) => item}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.listContent}
+        renderItem={({ item, index }) => {
+          const isAssigned = (asignaciones[selectedPuesto] || []).includes(item);
+          const totalCount = getPersonaCount(item);
+          const isMaxed = totalCount >= MAX_ASIGNACIONES_POR_PERSONA && !isAssigned;
+          return (
+            <Animated.View entering={FadeInDown.delay(index * 40).duration(250)} layout={LinearTransition.springify()}>
+              <TouchableOpacity
+                style={[styles.assignCard, isAssigned && styles.assignCardActive, isMaxed && styles.assignCardDisabled]}
+                onPress={() => toggleAsignacion(item)}
+                activeOpacity={isMaxed ? 1 : 0.7}
+              >
+                <View style={styles.assignLeft}>
+                  <View style={[styles.checkbox, isAssigned && styles.checkboxActive, isMaxed && styles.checkboxDisabled]}>
+                    {isAssigned && <Text style={styles.checkmark}>✓</Text>}
+                  </View>
+                  <View>
+                    <Text style={[styles.assignText, isAssigned && styles.assignTextActive, isMaxed && styles.assignTextDisabled]}>{item}</Text>
+                    {totalCount > 0 && (
+                      <Text style={styles.assignCountHint}>{totalCount}/{MAX_ASIGNACIONES_POR_PERSONA} puestos asignados</Text>
+                    )}
+                  </View>
+                </View>
+                {isAssigned && (
+                  <Animated.View entering={FadeIn.duration(200)}>
+                    <View style={styles.assignedBadge}>
+                      <Text style={styles.assignedBadgeText}>Asignado</Text>
+                    </View>
+                  </Animated.View>
+                )}
+                {isMaxed && (
+                  <View style={styles.maxedBadge}>
+                    <Text style={styles.maxedBadgeText}>Máximo</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </Animated.View>
+          );
+        }}
+      />
+    ) : (
+      <Animated.View entering={FadeIn.duration(400)} style={styles.emptyState}>
+        <Text style={styles.emptyIcon}>👆</Text>
+        <Text style={styles.emptyText}>Selecciona un puesto para comenzar</Text>
+      </Animated.View>
+    )
+  );
+
   const renderAsignacion = () => (
     <Animated.View entering={slideEnter} key="step-2" style={styles.stepContent}>
       <View style={styles.assignHeader}>
@@ -323,80 +405,46 @@ export default function App() {
           <Text style={styles.randomBtnText}>🎲 Aleatorio</Text>
         </TouchableOpacity>
       </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsScroll}>
-        <View style={styles.tabsRow}>
-          {puestos.map((p, i) => {
-            const isActive = selectedPuesto === p;
-            const count = (asignaciones[p] || []).length;
-            return (
-              <Animated.View key={p} entering={FadeInDown.delay(i * 60).duration(300)}>
-                <TouchableOpacity
-                  style={[styles.tab, isActive && styles.tabActive]}
-                  onPress={() => setSelectedPuesto(p)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.tabText, isActive && styles.tabTextActive]}>{p}</Text>
-                  {count > 0 && (
-                    <View style={[styles.badge, isActive && styles.badgeActive]}>
-                      <Text style={[styles.badgeText, isActive && styles.badgeTextActive]}>{count}</Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              </Animated.View>
-            );
-          })}
+      {isWide ? (
+        <View style={styles.assignRow}>
+          <View style={styles.assignColLeft}>
+            <Text style={styles.colTitle}>Puestos</Text>
+            {renderPuestosList()}
+          </View>
+          <View style={styles.assignDivider} />
+          <View style={styles.assignColRight}>
+            <Text style={styles.colTitle}>{selectedPuesto ? `Personas → ${selectedPuesto}` : 'Personas'}</Text>
+            {renderPersonasList()}
+          </View>
         </View>
-      </ScrollView>
-      {selectedPuesto ? (
-        <FlatList
-          data={personas}
-          keyExtractor={(item) => item}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.listContent}
-          renderItem={({ item, index }) => {
-            const isAssigned = (asignaciones[selectedPuesto] || []).includes(item);
-            const totalCount = getPersonaCount(item);
-            const isMaxed = totalCount >= MAX_ASIGNACIONES_POR_PERSONA && !isAssigned;
-            return (
-              <Animated.View entering={FadeInDown.delay(index * 40).duration(250)} layout={LinearTransition.springify()}>
-                <TouchableOpacity
-                  style={[styles.assignCard, isAssigned && styles.assignCardActive, isMaxed && styles.assignCardDisabled]}
-                  onPress={() => toggleAsignacion(item)}
-                  activeOpacity={isMaxed ? 1 : 0.7}
-                >
-                  <View style={styles.assignLeft}>
-                    <View style={[styles.checkbox, isAssigned && styles.checkboxActive, isMaxed && styles.checkboxDisabled]}>
-                      {isAssigned && <Text style={styles.checkmark}>✓</Text>}
-                    </View>
-                    <View>
-                      <Text style={[styles.assignText, isAssigned && styles.assignTextActive, isMaxed && styles.assignTextDisabled]}>{item}</Text>
-                      {totalCount > 0 && (
-                        <Text style={styles.assignCountHint}>{totalCount}/{MAX_ASIGNACIONES_POR_PERSONA} puestos asignados</Text>
-                      )}
-                    </View>
-                  </View>
-                  {isAssigned && (
-                    <Animated.View entering={FadeIn.duration(200)}>
-                      <View style={styles.assignedBadge}>
-                        <Text style={styles.assignedBadgeText}>Asignado</Text>
-                      </View>
-                    </Animated.View>
-                  )}
-                  {isMaxed && (
-                    <View style={styles.maxedBadge}>
-                      <Text style={styles.maxedBadgeText}>Máximo</Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              </Animated.View>
-            );
-          }}
-        />
       ) : (
-        <Animated.View entering={FadeIn.duration(400)} style={styles.emptyState}>
-          <Text style={styles.emptyIcon}>👆</Text>
-          <Text style={styles.emptyText}>Selecciona un puesto para comenzar</Text>
-        </Animated.View>
+        <>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsScroll}>
+            <View style={styles.tabsRow}>
+              {puestos.map((p, i) => {
+                const isActive = selectedPuesto === p;
+                const count = (asignaciones[p] || []).length;
+                return (
+                  <Animated.View key={p} entering={FadeInDown.delay(i * 60).duration(300)}>
+                    <TouchableOpacity
+                      style={[styles.tab, isActive && styles.tabActive]}
+                      onPress={() => setSelectedPuesto(p)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={[styles.tabText, isActive && styles.tabTextActive]}>{p}</Text>
+                      {count > 0 && (
+                        <View style={[styles.badge, isActive && styles.badgeActive]}>
+                          <Text style={[styles.badgeText, isActive && styles.badgeTextActive]}>{count}</Text>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  </Animated.View>
+                );
+              })}
+            </View>
+          </ScrollView>
+          {renderPersonasList()}
+        </>
       )}
     </Animated.View>
   );
@@ -799,6 +847,71 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: '#fff',
+  },
+  assignRow: {
+    flex: 1,
+    flexDirection: 'row',
+    gap: 0,
+  },
+  assignColLeft: {
+    width: 220,
+    paddingRight: 12,
+  },
+  assignDivider: {
+    width: 1,
+    backgroundColor: COLORS.border,
+    marginHorizontal: 4,
+  },
+  assignColRight: {
+    flex: 1,
+    paddingLeft: 12,
+  },
+  colTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 10,
+  },
+  puestosCol: {
+    flex: 1,
+  },
+  puestoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginBottom: 4,
+  },
+  puestoItemActive: {
+    backgroundColor: COLORS.primaryBg,
+  },
+  puestoItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  puestoDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.border,
+  },
+  puestoDotActive: {
+    backgroundColor: COLORS.primary,
+  },
+  puestoItemText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: COLORS.text,
+  },
+  puestoItemTextActive: {
+    color: COLORS.primary,
+    fontWeight: '700',
   },
   tabsScroll: {
     flexGrow: 0,
