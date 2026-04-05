@@ -46,6 +46,10 @@ const COLORS = {
 };
 
 const STORAGE_KEYS = { puestos: '@puestos', personas: '@personas' };
+const MAX_ASIGNACIONES_POR_PERSONA = 2;
+
+const capitalize = (str) =>
+  str.replace(/\b\w/g, (c) => c.toUpperCase());
 
 const shuffle = (arr) => {
   const a = [...arr];
@@ -68,6 +72,19 @@ export default function App() {
   const [inputValue, setInputValue] = useState('');
   const [selectedPuesto, setSelectedPuesto] = useState(null);
   const [loaded, setLoaded] = useState(false);
+
+  // Count how many puestos a persona is assigned to
+  const getPersonaCount = (persona) => {
+    let count = 0;
+    for (const key in asignaciones) {
+      if ((asignaciones[key] || []).includes(persona)) count++;
+    }
+    return count;
+  };
+
+  const handleInputChange = (text) => {
+    setInputValue(capitalize(text));
+  };
 
   // Load saved data on mount
   useEffect(() => {
@@ -122,18 +139,31 @@ export default function App() {
     if (puestos.length === 0 || personas.length === 0) return;
     const shuffled = shuffle(personas);
     const result = {};
-    puestos.forEach((puesto, i) => {
-      result[puesto] = [shuffled[i % shuffled.length]];
-    });
-    // If more people than puestos, distribute remaining
-    if (shuffled.length > puestos.length) {
-      const remaining = shuffled.slice(puestos.length);
-      remaining.forEach((persona, i) => {
-        const puesto = puestos[i % puestos.length];
-        if (!result[puesto].includes(persona)) {
+    const personaCounts = {};
+    personas.forEach((p) => { personaCounts[p] = 0; });
+    puestos.forEach((puesto) => { result[puesto] = []; });
+
+    // Distribute: each person max 2 puestos
+    for (const puesto of puestos) {
+      for (const persona of shuffled) {
+        if (personaCounts[persona] < MAX_ASIGNACIONES_POR_PERSONA && !result[puesto].includes(persona)) {
           result[puesto].push(persona);
+          personaCounts[persona]++;
+          break;
         }
-      });
+      }
+    }
+    // Fill remaining slots if possible
+    for (const puesto of puestos) {
+      if (result[puesto].length === 0) {
+        for (const persona of shuffle(personas)) {
+          if (personaCounts[persona] < MAX_ASIGNACIONES_POR_PERSONA) {
+            result[puesto].push(persona);
+            personaCounts[persona]++;
+            break;
+          }
+        }
+      }
     }
     setAsignaciones(result);
     setSelectedPuesto(puestos[0]);
@@ -146,6 +176,12 @@ export default function App() {
       if (current.includes(persona)) {
         return { ...prev, [selectedPuesto]: current.filter((p) => p !== persona) };
       }
+      // Check max assignments across all puestos
+      let count = 0;
+      for (const key in prev) {
+        if ((prev[key] || []).includes(persona)) count++;
+      }
+      if (count >= MAX_ASIGNACIONES_POR_PERSONA) return prev;
       return { ...prev, [selectedPuesto]: [...current, persona] };
     });
   };
@@ -234,7 +270,7 @@ export default function App() {
             placeholder={placeholder}
             placeholderTextColor={COLORS.textMuted}
             value={inputValue}
-            onChangeText={setInputValue}
+            onChangeText={handleInputChange}
             onSubmitEditing={onAdd}
           />
         </View>
@@ -319,18 +355,25 @@ export default function App() {
           contentContainerStyle={styles.listContent}
           renderItem={({ item, index }) => {
             const isAssigned = (asignaciones[selectedPuesto] || []).includes(item);
+            const totalCount = getPersonaCount(item);
+            const isMaxed = totalCount >= MAX_ASIGNACIONES_POR_PERSONA && !isAssigned;
             return (
               <Animated.View entering={FadeInDown.delay(index * 40).duration(250)} layout={LinearTransition.springify()}>
                 <TouchableOpacity
-                  style={[styles.assignCard, isAssigned && styles.assignCardActive]}
+                  style={[styles.assignCard, isAssigned && styles.assignCardActive, isMaxed && styles.assignCardDisabled]}
                   onPress={() => toggleAsignacion(item)}
-                  activeOpacity={0.7}
+                  activeOpacity={isMaxed ? 1 : 0.7}
                 >
                   <View style={styles.assignLeft}>
-                    <View style={[styles.checkbox, isAssigned && styles.checkboxActive]}>
+                    <View style={[styles.checkbox, isAssigned && styles.checkboxActive, isMaxed && styles.checkboxDisabled]}>
                       {isAssigned && <Text style={styles.checkmark}>✓</Text>}
                     </View>
-                    <Text style={[styles.assignText, isAssigned && styles.assignTextActive]}>{item}</Text>
+                    <View>
+                      <Text style={[styles.assignText, isAssigned && styles.assignTextActive, isMaxed && styles.assignTextDisabled]}>{item}</Text>
+                      {totalCount > 0 && (
+                        <Text style={styles.assignCountHint}>{totalCount}/{MAX_ASIGNACIONES_POR_PERSONA} puestos asignados</Text>
+                      )}
+                    </View>
                   </View>
                   {isAssigned && (
                     <Animated.View entering={FadeIn.duration(200)}>
@@ -338,6 +381,11 @@ export default function App() {
                         <Text style={styles.assignedBadgeText}>Asignado</Text>
                       </View>
                     </Animated.View>
+                  )}
+                  {isMaxed && (
+                    <View style={styles.maxedBadge}>
+                      <Text style={styles.maxedBadgeText}>Máximo</Text>
+                    </View>
                   )}
                 </TouchableOpacity>
               </Animated.View>
@@ -424,7 +472,7 @@ export default function App() {
   return (
     <View style={styles.container}>
       <StatusBar style="dark" />
-      <View style={[styles.inner, { maxWidth: isWide ? 640 : '100%' }]}>
+      <View style={[styles.inner, { maxWidth: isWide ? 800 : '100%' }]}>
         <Animated.View entering={FadeInDown.duration(500)}>
           <Text style={styles.header}>Horarios de Trabajo</Text>
           <Text style={styles.headerSub}>Organiza tu equipo de forma rápida y sencilla</Text>
@@ -582,7 +630,6 @@ const styles = StyleSheet.create({
       web: { boxShadow: '0 4px 24px rgba(15,23,42,0.08)' },
       default: { elevation: 4 },
     }),
-    overflow: 'hidden',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -754,7 +801,7 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   tabsScroll: {
-    maxHeight: 48,
+    flexGrow: 0,
     marginBottom: 16,
   },
   tabsRow: {
@@ -866,6 +913,32 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: COLORS.success,
+  },
+  assignCardDisabled: {
+    opacity: 0.5,
+  },
+  checkboxDisabled: {
+    borderColor: COLORS.textMuted,
+    backgroundColor: COLORS.bg,
+  },
+  assignTextDisabled: {
+    color: COLORS.textMuted,
+  },
+  assignCountHint: {
+    fontSize: 11,
+    color: COLORS.textMuted,
+    marginTop: 2,
+  },
+  maxedBadge: {
+    backgroundColor: COLORS.dangerBg,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  maxedBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.danger,
   },
   statsRow: {
     flexDirection: 'row',
