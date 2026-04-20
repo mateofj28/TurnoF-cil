@@ -1,41 +1,57 @@
 import { useState, useEffect } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { STORAGE_KEYS } from '../constants';
+import {
+  subscribePuestos,
+  addPuestoDoc,
+  removePuestoDoc,
+  subscribePersonas,
+  addPersonaDoc,
+  removePersonaDoc,
+} from '../services';
 
 export const useStorage = () => {
   const [puestos, setPuestos] = useState([]);
   const [personas, setPersonas] = useState([]);
   const [loaded, setLoaded] = useState(false);
 
-  // Load saved data on mount
   useEffect(() => {
-    (async () => {
-      try {
-        const [savedPuestos, savedPersonas] = await Promise.all([
-          AsyncStorage.getItem(STORAGE_KEYS.puestos),
-          AsyncStorage.getItem(STORAGE_KEYS.personas),
-        ]);
-        if (savedPuestos) setPuestos(JSON.parse(savedPuestos));
-        if (savedPersonas) setPersonas(JSON.parse(savedPersonas));
-      } catch (e) {
-        console.warn('Error loading data:', e);
-      } finally {
-        setLoaded(true);
-      }
-    })();
+    const unsubPuestos = subscribePuestos((items) => {
+      setPuestos(items);
+      setLoaded(true);
+    });
+
+    const unsubPersonas = subscribePersonas((items) => {
+      setPersonas(items);
+    });
+
+    return () => {
+      unsubPuestos();
+      unsubPersonas();
+    };
   }, []);
 
-  // Persist puestos when they change
-  useEffect(() => {
-    if (!loaded) return;
-    AsyncStorage.setItem(STORAGE_KEYS.puestos, JSON.stringify(puestos)).catch(() => {});
-  }, [puestos, loaded]);
+  const addPuesto = async (name) => {
+    await addPuestoDoc(name);
+  };
 
-  // Persist personas when they change
-  useEffect(() => {
-    if (!loaded) return;
-    AsyncStorage.setItem(STORAGE_KEYS.personas, JSON.stringify(personas)).catch(() => {});
-  }, [personas, loaded]);
+  const removePuesto = async (name) => {
+    await removePuestoDoc(name);
+  };
 
-  return { puestos, setPuestos, personas, setPersonas, loaded };
+  const addPersona = async (name) => {
+    await addPersonaDoc(name);
+  };
+
+  const removePersona = async (name) => {
+    await removePersonaDoc(name);
+  };
+
+  return {
+    puestos,
+    personas,
+    loaded,
+    addPuesto,
+    removePuesto,
+    addPersona,
+    removePersona,
+  };
 };

@@ -1,10 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MAX_ASIGNACIONES_POR_PERSONA } from '../constants';
 import { shuffle } from '../utils';
+import {
+  subscribeAsignaciones,
+  saveAsignaciones,
+  clearAsignaciones,
+} from '../services';
 
 export const useAsignaciones = (puestos, personas) => {
   const [asignaciones, setAsignaciones] = useState({});
   const [selectedPuesto, setSelectedPuesto] = useState(null);
+
+  // Subscribe to real-time asignaciones from Firestore
+  useEffect(() => {
+    const unsub = subscribeAsignaciones((data) => {
+      setAsignaciones(data);
+    });
+    return () => unsub();
+  }, []);
 
   const getPersonaCount = (persona) => {
     let count = 0;
@@ -14,7 +27,7 @@ export const useAsignaciones = (puestos, personas) => {
     return count;
   };
 
-  const asignarAleatorio = () => {
+  const asignarAleatorio = async () => {
     if (puestos.length === 0 || personas.length === 0) return;
     const shuffled = shuffle(personas);
     const result = {};
@@ -47,43 +60,50 @@ export const useAsignaciones = (puestos, personas) => {
       }
     }
 
-    setAsignaciones(result);
+    await saveAsignaciones(result);
     setSelectedPuesto(puestos[0]);
   };
 
-  const toggleAsignacion = (persona) => {
+  const toggleAsignacion = async (persona) => {
     if (!selectedPuesto) return;
-    setAsignaciones((prev) => {
-      const current = prev[selectedPuesto] || [];
-      if (current.includes(persona)) {
-        return { ...prev, [selectedPuesto]: current.filter((p) => p !== persona) };
-      }
+
+    const current = asignaciones[selectedPuesto] || [];
+    let updated;
+
+    if (current.includes(persona)) {
+      updated = { ...asignaciones, [selectedPuesto]: current.filter((p) => p !== persona) };
+    } else {
       let count = 0;
-      for (const key in prev) {
-        if ((prev[key] || []).includes(persona)) count++;
+      for (const key in asignaciones) {
+        if ((asignaciones[key] || []).includes(persona)) count++;
       }
-      if (count >= MAX_ASIGNACIONES_POR_PERSONA) return prev;
-      return { ...prev, [selectedPuesto]: [...current, persona] };
-    });
+      if (count >= MAX_ASIGNACIONES_POR_PERSONA) return;
+      updated = { ...asignaciones, [selectedPuesto]: [...current, persona] };
+    }
+
+    await saveAsignaciones(updated);
   };
 
-  const resetAsignaciones = () => {
-    setAsignaciones({});
+  const resetAsignaciones = async () => {
+    await clearAsignaciones();
     setSelectedPuesto(null);
   };
 
-  const removeAsignacionesPuesto = (puesto) => {
+  const removeAsignacionesPuesto = async (puesto) => {
     const { [puesto]: _, ...rest } = asignaciones;
-    setAsignaciones(rest);
+    await saveAsignaciones(rest);
     if (selectedPuesto === puesto) setSelectedPuesto(null);
   };
 
-  const removePersonaDeAsignaciones = (persona) => {
+  const removePersonaDeAsignaciones = async (persona) => {
     const updated = {};
+    let changed = false;
     for (const key in asignaciones) {
-      updated[key] = asignaciones[key].filter((p) => p !== persona);
+      const filtered = asignaciones[key].filter((p) => p !== persona);
+      updated[key] = filtered;
+      if (filtered.length !== asignaciones[key].length) changed = true;
     }
-    setAsignaciones(updated);
+    if (changed) await saveAsignaciones(updated);
   };
 
   return {

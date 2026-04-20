@@ -20,7 +20,14 @@ export default function App() {
   const isWide = width > 768;
 
   const { step, prevStep, goToStep } = useStepper(STEPS.length);
-  const { puestos, setPuestos, personas, setPersonas } = useStorage();
+  const {
+    puestos,
+    personas,
+    addPuesto,
+    removePuesto,
+    addPersona,
+    removePersona,
+  } = useStorage();
   const {
     asignaciones,
     selectedPuesto,
@@ -42,33 +49,33 @@ export default function App() {
     setInputValue('');
   };
 
-  const addPuesto = () => {
+  const handleAddPuesto = async () => {
     const name = inputValue.trim();
     if (!name || puestos.includes(name)) return;
-    setPuestos([...puestos, name]);
+    await addPuesto(name);
     setInputValue('');
   };
 
-  const addPersona = () => {
+  const handleAddPersona = async () => {
     const name = inputValue.trim();
     if (!name || personas.includes(name)) return;
-    setPersonas([...personas, name]);
+    await addPersona(name);
     setInputValue('');
   };
 
-  const removePuesto = (name) => {
-    setPuestos(puestos.filter((p) => p !== name));
-    removeAsignacionesPuesto(name);
+  const handleRemovePuesto = async (name) => {
+    await removePuesto(name);
+    await removeAsignacionesPuesto(name);
   };
 
-  const removePersona = (name) => {
-    setPersonas(personas.filter((p) => p !== name));
-    removePersonaDeAsignaciones(name);
+  const handleRemovePersona = async (name) => {
+    await removePersona(name);
+    await removePersonaDeAsignaciones(name);
   };
 
-  const reset = () => {
+  const reset = async () => {
     handleGoToStep(0);
-    resetAsignaciones();
+    await resetAsignaciones();
   };
 
   const canGoNext = () => {
@@ -90,9 +97,9 @@ export default function App() {
             placeholder="Ej: Caja, Bodega, Recepción..."
             inputValue={inputValue}
             onChangeText={handleInputChange}
-            onAdd={addPuesto}
+            onAdd={handleAddPuesto}
             items={puestos}
-            onRemove={removePuesto}
+            onRemove={handleRemovePuesto}
             emptyMsg="Agrega tu primer puesto de trabajo"
             emptyIcon="🏢"
             enteringAnimation={slideEnter}
@@ -105,9 +112,9 @@ export default function App() {
             placeholder="Ej: Juan, María, Carlos..."
             inputValue={inputValue}
             onChangeText={handleInputChange}
-            onAdd={addPersona}
+            onAdd={handleAddPersona}
             items={personas}
-            onRemove={removePersona}
+            onRemove={handleRemovePersona}
             emptyMsg="Agrega las personas disponibles"
             emptyIcon="👥"
             enteringAnimation={slideEnter}
