@@ -8,18 +8,27 @@ import {
   removePersonaDoc,
 } from '../services';
 
-export const useStorage = () => {
+export const useStorage = (empresaId, horarioId) => {
   const [puestos, setPuestos] = useState([]);
   const [personas, setPersonas] = useState([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    const unsubPuestos = subscribePuestos((items) => {
+    if (!empresaId || !horarioId) {
+      setPuestos([]);
+      setPersonas([]);
+      setLoaded(false);
+      return;
+    }
+
+    setLoaded(false);
+
+    const unsubPuestos = subscribePuestos(empresaId, horarioId, (items) => {
       setPuestos(items);
       setLoaded(true);
     });
 
-    const unsubPersonas = subscribePersonas((items) => {
+    const unsubPersonas = subscribePersonas(empresaId, horarioId, (items) => {
       setPersonas(items);
     });
 
@@ -27,22 +36,22 @@ export const useStorage = () => {
       unsubPuestos();
       unsubPersonas();
     };
-  }, []);
+  }, [empresaId, horarioId]);
 
   const addPuesto = async (name) => {
-    await addPuestoDoc(name);
+    await addPuestoDoc(empresaId, horarioId, name);
   };
 
   const removePuesto = async (name) => {
-    await removePuestoDoc(name);
+    await removePuestoDoc(empresaId, horarioId, name);
   };
 
   const addPersona = async (name) => {
-    await addPersonaDoc(name);
+    await addPersonaDoc(empresaId, horarioId, name);
   };
 
   const removePersona = async (name) => {
-    await removePersonaDoc(name);
+    await removePersonaDoc(empresaId, horarioId, name);
   };
 
   return {

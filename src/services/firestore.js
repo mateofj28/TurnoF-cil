@@ -1,85 +1,156 @@
 import {
   collection,
   doc,
+  addDoc,
   setDoc,
   deleteDoc,
   onSnapshot,
   writeBatch,
+  serverTimestamp,
+  query,
+  orderBy,
 } from 'firebase/firestore';
 import { db } from './firebase';
 
-// Collections
-const PUESTOS_COL = 'puestos';
-const PERSONAS_COL = 'personas';
-const ASIGNACIONES_COL = 'asignaciones';
+// ==================== EMPRESAS ====================
 
-// --- Puestos ---
-
-export const subscribePuestos = (callback) => {
-  return onSnapshot(collection(db, PUESTOS_COL), (snapshot) => {
-    const items = snapshot.docs.map((doc) => doc.data().name);
+export const subscribeEmpresas = (callback) => {
+  const q = query(collection(db, 'empresas'), orderBy('createdAt', 'desc'));
+  return onSnapshot(q, (snapshot) => {
+    const items = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
     callback(items);
   });
 };
 
-export const addPuestoDoc = async (name) => {
-  await setDoc(doc(db, PUESTOS_COL, name), { name });
+export const addEmpresaDoc = async (name) => {
+  const ref = await addDoc(collection(db, 'empresas'), {
+    name,
+    createdAt: serverTimestamp(),
+  });
+  return ref.id;
 };
 
-export const removePuestoDoc = async (name) => {
-  await deleteDoc(doc(db, PUESTOS_COL, name));
+export const removeEmpresaDoc = async (empresaId) => {
+  // Delete empresa doc (subcollections persist in Firestore but won't be queried)
+  await deleteDoc(doc(db, 'empresas', empresaId));
+};
+
+// ==================== HORARIOS ====================
+
+const horariosCol = (empresaId) =>
+  collection(db, 'empresas', empresaId, 'horarios');
+
+export const subscribeHorarios = (empresaId, callback) => {
+  const q = query(horariosCol(empresaId), orderBy('createdAt', 'desc'));
+  return onSnapshot(q, (snapshot) => {
+    const items = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+    callback(items);
+  });
+};
+
+export const addHorarioDoc = async (empresaId, name) => {
+  const ref = await addDoc(horariosCol(empresaId), {
+    name,
+    createdAt: serverTimestamp(),
+  });
+  return ref.id;
+};
+
+export const removeHorarioDoc = async (empresaId, horarioId) => {
+  await deleteDoc(doc(db, 'empresas', empresaId, 'horarios', horarioId));
+};
+
+// ==================== PUESTOS (dentro de horario) ====================
+
+const puestosCol = (empresaId, horarioId) =>
+  collection(db, 'empresas', empresaId, 'horarios', horarioId, 'puestos');
+
+export const subscribePuestos = (empresaId, horarioId, callback) => {
+  return onSnapshot(puestosCol(empresaId, horarioId), (snapshot) => {
+    const items = snapshot.docs.map((d) => d.data().name);
+    callback(items);
+  });
+};
+
+export const addPuestoDoc = async (empresaId, horarioId, name) => {
+  await setDoc(
+    doc(db, 'empresas', empresaId, 'horarios', horarioId, 'puestos', name),
+    { name }
+  );
+};
+
+export const removePuestoDoc = async (empresaId, horarioId, name) => {
+  await deleteDoc(
+    doc(db, 'empresas', empresaId, 'horarios', horarioId, 'puestos', name)
+  );
   // Also remove its assignments
-  await deleteDoc(doc(db, ASIGNACIONES_COL, name));
+  await deleteDoc(
+    doc(db, 'empresas', empresaId, 'horarios', horarioId, 'asignaciones', name)
+  );
 };
 
-// --- Personas ---
+// ==================== PERSONAS (dentro de horario) ====================
 
-export const subscribePersonas = (callback) => {
-  return onSnapshot(collection(db, PERSONAS_COL), (snapshot) => {
-    const items = snapshot.docs.map((doc) => doc.data().name);
+const personasCol = (empresaId, horarioId) =>
+  collection(db, 'empresas', empresaId, 'horarios', horarioId, 'personas');
+
+export const subscribePersonas = (empresaId, horarioId, callback) => {
+  return onSnapshot(personasCol(empresaId, horarioId), (snapshot) => {
+    const items = snapshot.docs.map((d) => d.data().name);
     callback(items);
   });
 };
 
-export const addPersonaDoc = async (name) => {
-  await setDoc(doc(db, PERSONAS_COL, name), { name });
+export const addPersonaDoc = async (empresaId, horarioId, name) => {
+  await setDoc(
+    doc(db, 'empresas', empresaId, 'horarios', horarioId, 'personas', name),
+    { name }
+  );
 };
 
-export const removePersonaDoc = async (name) => {
-  await deleteDoc(doc(db, PERSONAS_COL, name));
+export const removePersonaDoc = async (empresaId, horarioId, name) => {
+  await deleteDoc(
+    doc(db, 'empresas', empresaId, 'horarios', horarioId, 'personas', name)
+  );
 };
 
-// --- Asignaciones ---
+// ==================== ASIGNACIONES (dentro de horario) ====================
 
-export const subscribeAsignaciones = (callback) => {
-  return onSnapshot(collection(db, ASIGNACIONES_COL), (snapshot) => {
+const asignacionesCol = (empresaId, horarioId) =>
+  collection(db, 'empresas', empresaId, 'horarios', horarioId, 'asignaciones');
+
+export const subscribeAsignaciones = (empresaId, horarioId, callback) => {
+  return onSnapshot(asignacionesCol(empresaId, horarioId), (snapshot) => {
     const result = {};
-    snapshot.docs.forEach((doc) => {
-      result[doc.id] = doc.data().personas || [];
+    snapshot.docs.forEach((d) => {
+      result[d.id] = d.data().personas || [];
     });
     callback(result);
   });
 };
 
-export const saveAsignaciones = async (asignaciones) => {
+export const saveAsignaciones = async (empresaId, horarioId, asignaciones) => {
   const batch = writeBatch(db);
   for (const [puesto, personas] of Object.entries(asignaciones)) {
-    batch.set(doc(db, ASIGNACIONES_COL, puesto), { personas });
+    batch.set(
+      doc(db, 'empresas', empresaId, 'horarios', horarioId, 'asignaciones', puesto),
+      { personas }
+    );
   }
   await batch.commit();
 };
 
-export const clearAsignaciones = async () => {
-  const batch = writeBatch(db);
-  // We'll clear by setting empty — the subscribe will handle it
-  // Actually we need to get current docs first
+export const clearAsignaciones = async (empresaId, horarioId) => {
   return new Promise((resolve) => {
-    const unsub = onSnapshot(collection(db, ASIGNACIONES_COL), async (snapshot) => {
-      unsub();
-      const b = writeBatch(db);
-      snapshot.docs.forEach((d) => b.delete(d.ref));
-      await b.commit();
-      resolve();
-    });
+    const unsub = onSnapshot(
+      asignacionesCol(empresaId, horarioId),
+      async (snapshot) => {
+        unsub();
+        const batch = writeBatch(db);
+        snapshot.docs.forEach((d) => batch.delete(d.ref));
+        await batch.commit();
+        resolve();
+      }
+    );
   });
 };

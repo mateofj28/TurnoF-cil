@@ -1,192 +1,48 @@
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
-import { View, Text, useWindowDimensions } from 'react-native';
-import Animated, {
-  FadeInDown,
-  SlideInRight,
-  SlideInLeft,
-} from 'react-native-reanimated';
+import { View, useWindowDimensions } from 'react-native';
 
-import { STEPS } from './src/constants';
-import { capitalize } from './src/utils';
-import { useStorage, useAsignaciones, useStepper } from './src/hooks';
-import { StepIndicator, InputSection, NavigationBar } from './src/components';
-import { AsignacionScreen } from './src/screens/AsignacionScreen';
-import { ResumenScreen } from './src/screens/ResumenScreen';
+import { EmpresasScreen } from './src/screens/EmpresasScreen';
+import { HorariosScreen } from './src/screens/HorariosScreen';
+import { HorarioWizard } from './src/screens/HorarioWizard';
 import { appStyles as styles } from './src/styles/app.styles';
 
 export default function App() {
   const { width } = useWindowDimensions();
   const isWide = width > 768;
 
-  const { step, prevStep, goToStep } = useStepper(STEPS.length);
-  const {
-    puestos,
-    personas,
-    addPuesto,
-    removePuesto,
-    addPersona,
-    removePersona,
-  } = useStorage();
-  const {
-    asignaciones,
-    selectedPuesto,
-    setSelectedPuesto,
-    getPersonaCount,
-    asignarAleatorio,
-    toggleAsignacion,
-    resetAsignaciones,
-    removeAsignacionesPuesto,
-    removePersonaDeAsignaciones,
-  } = useAsignaciones(puestos, personas);
+  const [selectedEmpresa, setSelectedEmpresa] = useState(null);
+  const [selectedHorario, setSelectedHorario] = useState(null);
 
-  const [inputValue, setInputValue] = useState('');
-
-  const handleInputChange = (text) => setInputValue(capitalize(text));
-
-  const handleGoToStep = (newStep) => {
-    goToStep(newStep);
-    setInputValue('');
-  };
-
-  const handleAddPuesto = async () => {
-    const name = inputValue.trim();
-    if (!name || puestos.includes(name)) return;
-    await addPuesto(name);
-    setInputValue('');
-  };
-
-  const handleAddPersona = async () => {
-    const name = inputValue.trim();
-    if (!name || personas.includes(name)) return;
-    await addPersona(name);
-    setInputValue('');
-  };
-
-  const handleRemovePuesto = async (name) => {
-    await removePuesto(name);
-    await removeAsignacionesPuesto(name);
-  };
-
-  const handleRemovePersona = async (name) => {
-    await removePersona(name);
-    await removePersonaDeAsignaciones(name);
-  };
-
-  const reset = async () => {
-    handleGoToStep(0);
-    await resetAsignaciones();
-  };
-
-  const canGoNext = () => {
-    if (step === 0) return puestos.length > 0;
-    if (step === 1) return personas.length > 0;
-    if (step === 2) return Object.values(asignaciones).some((a) => a.length > 0);
-    return false;
-  };
-
-  const slideEnter = step > prevStep
-    ? SlideInRight.duration(300)
-    : SlideInLeft.duration(300);
-
-  const renderCurrentStep = () => {
-    switch (step) {
-      case 0:
-        return (
-          <InputSection
-            placeholder="Ej: Caja, Bodega, Recepción..."
-            inputValue={inputValue}
-            onChangeText={handleInputChange}
-            onAdd={handleAddPuesto}
-            items={puestos}
-            onRemove={handleRemovePuesto}
-            emptyMsg="Agrega tu primer puesto de trabajo"
-            emptyIcon="🏢"
-            enteringAnimation={slideEnter}
-            stepKey={`step-${step}`}
-          />
-        );
-      case 1:
-        return (
-          <InputSection
-            placeholder="Ej: Juan, María, Carlos..."
-            inputValue={inputValue}
-            onChangeText={handleInputChange}
-            onAdd={handleAddPersona}
-            items={personas}
-            onRemove={handleRemovePersona}
-            emptyMsg="Agrega las personas disponibles"
-            emptyIcon="👥"
-            enteringAnimation={slideEnter}
-            stepKey={`step-${step}`}
-          />
-        );
-      case 2:
-        return (
-          <AsignacionScreen
-            enteringAnimation={slideEnter}
-            puestos={puestos}
-            personas={personas}
-            asignaciones={asignaciones}
-            selectedPuesto={selectedPuesto}
-            isWide={isWide}
-            getPersonaCount={getPersonaCount}
-            onSelectPuesto={setSelectedPuesto}
-            onToggle={toggleAsignacion}
-            onAsignarAleatorio={asignarAleatorio}
-          />
-        );
-      case 3:
-        return (
-          <ResumenScreen
-            enteringAnimation={slideEnter}
-            puestos={puestos}
-            asignaciones={asignaciones}
-            isWide={isWide}
-          />
-        );
-      default:
-        return null;
+  const renderScreen = () => {
+    if (selectedEmpresa && selectedHorario) {
+      return (
+        <HorarioWizard
+          empresa={selectedEmpresa}
+          horario={selectedHorario}
+          onBack={() => setSelectedHorario(null)}
+        />
+      );
     }
+
+    if (selectedEmpresa) {
+      return (
+        <HorariosScreen
+          empresa={selectedEmpresa}
+          onSelectHorario={setSelectedHorario}
+          onBack={() => setSelectedEmpresa(null)}
+        />
+      );
+    }
+
+    return <EmpresasScreen onSelectEmpresa={setSelectedEmpresa} />;
   };
 
   return (
     <View style={styles.container}>
       <StatusBar style="dark" />
       <View style={[styles.inner, { maxWidth: isWide ? 800 : '100%' }]}>
-        <Animated.View entering={FadeInDown.duration(500)}>
-          <Text style={styles.header}>Horarios de Trabajo</Text>
-          <Text style={styles.headerSub}>
-            Organiza tu equipo de forma rápida y sencilla
-          </Text>
-        </Animated.View>
-
-        <StepIndicator
-          currentStep={step}
-          isWide={isWide}
-          onGoToStep={handleGoToStep}
-        />
-
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>
-              {STEPS[step].icon} {STEPS[step].label}
-            </Text>
-            <Text style={styles.cardStep}>
-              Paso {step + 1} de {STEPS.length}
-            </Text>
-          </View>
-          <View style={styles.cardBody}>{renderCurrentStep()}</View>
-        </View>
-
-        <NavigationBar
-          step={step}
-          totalSteps={STEPS.length}
-          canGoNext={canGoNext()}
-          onBack={() => handleGoToStep(step - 1)}
-          onNext={() => handleGoToStep(step + 1)}
-          onReset={reset}
-        />
+        {renderScreen()}
       </View>
     </View>
   );

@@ -61,4 +61,12 @@ export const appStyles = StyleSheet.create({
     flex: 1,
     padding: 20,
   },
+  backBtn: {
+    marginBottom: 8,
+  },
+  backBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
 });

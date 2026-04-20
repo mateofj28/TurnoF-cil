@@ -7,17 +7,22 @@ import {
   clearAsignaciones,
 } from '../services';
 
-export const useAsignaciones = (puestos, personas) => {
+export const useAsignaciones = (empresaId, horarioId, puestos, personas) => {
   const [asignaciones, setAsignaciones] = useState({});
   const [selectedPuesto, setSelectedPuesto] = useState(null);
 
-  // Subscribe to real-time asignaciones from Firestore
   useEffect(() => {
-    const unsub = subscribeAsignaciones((data) => {
+    if (!empresaId || !horarioId) {
+      setAsignaciones({});
+      setSelectedPuesto(null);
+      return;
+    }
+
+    const unsub = subscribeAsignaciones(empresaId, horarioId, (data) => {
       setAsignaciones(data);
     });
     return () => unsub();
-  }, []);
+  }, [empresaId, horarioId]);
 
   const getPersonaCount = (persona) => {
     let count = 0;
@@ -60,7 +65,7 @@ export const useAsignaciones = (puestos, personas) => {
       }
     }
 
-    await saveAsignaciones(result);
+    await saveAsignaciones(empresaId, horarioId, result);
     setSelectedPuesto(puestos[0]);
   };
 
@@ -81,17 +86,17 @@ export const useAsignaciones = (puestos, personas) => {
       updated = { ...asignaciones, [selectedPuesto]: [...current, persona] };
     }
 
-    await saveAsignaciones(updated);
+    await saveAsignaciones(empresaId, horarioId, updated);
   };
 
   const resetAsignaciones = async () => {
-    await clearAsignaciones();
+    await clearAsignaciones(empresaId, horarioId);
     setSelectedPuesto(null);
   };
 
   const removeAsignacionesPuesto = async (puesto) => {
     const { [puesto]: _, ...rest } = asignaciones;
-    await saveAsignaciones(rest);
+    await saveAsignaciones(empresaId, horarioId, rest);
     if (selectedPuesto === puesto) setSelectedPuesto(null);
   };
 
@@ -103,7 +108,7 @@ export const useAsignaciones = (puestos, personas) => {
       updated[key] = filtered;
       if (filtered.length !== asignaciones[key].length) changed = true;
     }
-    if (changed) await saveAsignaciones(updated);
+    if (changed) await saveAsignaciones(empresaId, horarioId, updated);
   };
 
   return {

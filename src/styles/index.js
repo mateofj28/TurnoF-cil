@@ -4,3 +4,5 @@ export { inputSectionStyles } from './inputSection.styles';
 export { asignacionStyles } from './asignacion.styles';
 export { resumenStyles } from './resumen.styles';
 export { navigationStyles } from './navigation.styles';
+export { empresasStyles } from './empresas.styles';
+export { horariosStyles } from './horarios.styles';
