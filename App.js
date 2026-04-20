@@ -1,124 +1,45 @@
 import { StatusBar } from 'expo-status-bar';
-import { useState, useEffect } from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  TextInput,
-  TouchableOpacity,
-  FlatList,
-  ScrollView,
-  useWindowDimensions,
-  Platform,
-} from 'react-native';
+import { useState } from 'react';
+import { View, Text, useWindowDimensions } from 'react-native';
 import Animated, {
-  FadeIn,
+  FadeInDown,
   SlideInRight,
   SlideInLeft,
-  FadeInDown,
-  FadeInUp,
-  LinearTransition,
 } from 'react-native-reanimated';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const STEPS = [
-  { key: 'puestos', label: 'Puestos', icon: '🏢' },
-  { key: 'personas', label: 'Personas', icon: '👥' },
-  { key: 'asignacion', label: 'Asignación', icon: '🔗' },
-  { key: 'resumen', label: 'Resumen', icon: '📋' },
-];
-
-const COLORS = {
-  primary: '#4F46E5',
-  primaryLight: '#818CF8',
-  primaryBg: '#EEF2FF',
-  danger: '#EF4444',
-  dangerBg: '#FEF2F2',
-  success: '#10B981',
-  successBg: '#ECFDF5',
-  bg: '#F8FAFC',
-  card: '#FFFFFF',
-  border: '#E2E8F0',
-  text: '#1E293B',
-  textSecondary: '#64748B',
-  textMuted: '#94A3B8',
-  shadow: '#0F172A',
-};
-
-const STORAGE_KEYS = { puestos: '@puestos', personas: '@personas' };
-const MAX_ASIGNACIONES_POR_PERSONA = 1;
-
-const capitalize = (str) =>
-  str.replace(/\b\w/g, (c) => c.toUpperCase());
-
-const shuffle = (arr) => {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-};
+import { STEPS } from './src/constants';
+import { capitalize } from './src/utils';
+import { useStorage, useAsignaciones, useStepper } from './src/hooks';
+import { StepIndicator, InputSection, NavigationBar } from './src/components';
+import { AsignacionScreen } from './src/screens/AsignacionScreen';
+import { ResumenScreen } from './src/screens/ResumenScreen';
+import { appStyles as styles } from './src/styles/app.styles';
 
 export default function App() {
   const { width } = useWindowDimensions();
   const isWide = width > 768;
 
-  const [step, setStep] = useState(0);
-  const [prevStep, setPrevStep] = useState(0);
-  const [puestos, setPuestos] = useState([]);
-  const [personas, setPersonas] = useState([]);
-  const [asignaciones, setAsignaciones] = useState({});
+  const { step, prevStep, goToStep } = useStepper(STEPS.length);
+  const { puestos, setPuestos, personas, setPersonas } = useStorage();
+  const {
+    asignaciones,
+    selectedPuesto,
+    setSelectedPuesto,
+    getPersonaCount,
+    asignarAleatorio,
+    toggleAsignacion,
+    resetAsignaciones,
+    removeAsignacionesPuesto,
+    removePersonaDeAsignaciones,
+  } = useAsignaciones(puestos, personas);
+
   const [inputValue, setInputValue] = useState('');
-  const [selectedPuesto, setSelectedPuesto] = useState(null);
-  const [loaded, setLoaded] = useState(false);
 
-  // Count how many puestos a persona is assigned to
-  const getPersonaCount = (persona) => {
-    let count = 0;
-    for (const key in asignaciones) {
-      if ((asignaciones[key] || []).includes(persona)) count++;
-    }
-    return count;
-  };
+  const handleInputChange = (text) => setInputValue(capitalize(text));
 
-  const handleInputChange = (text) => {
-    setInputValue(capitalize(text));
-  };
-
-  // Load saved data on mount
-  useEffect(() => {
-    (async () => {
-      try {
-        const [savedPuestos, savedPersonas] = await Promise.all([
-          AsyncStorage.getItem(STORAGE_KEYS.puestos),
-          AsyncStorage.getItem(STORAGE_KEYS.personas),
-        ]);
-        if (savedPuestos) setPuestos(JSON.parse(savedPuestos));
-        if (savedPersonas) setPersonas(JSON.parse(savedPersonas));
-      } catch (e) {
-        console.warn('Error loading data:', e);
-      } finally {
-        setLoaded(true);
-      }
-    })();
-  }, []);
-
-  // Persist puestos & personas when they change
-  useEffect(() => {
-    if (!loaded) return;
-    AsyncStorage.setItem(STORAGE_KEYS.puestos, JSON.stringify(puestos)).catch(() => { });
-  }, [puestos, loaded]);
-
-  useEffect(() => {
-    if (!loaded) return;
-    AsyncStorage.setItem(STORAGE_KEYS.personas, JSON.stringify(personas)).catch(() => { });
-  }, [personas, loaded]);
-
-  const goToStep = (newStep) => {
-    setPrevStep(step);
+  const handleGoToStep = (newStep) => {
+    goToStep(newStep);
     setInputValue('');
-    setStep(newStep);
   };
 
   const addPuesto = () => {
@@ -135,61 +56,19 @@ export default function App() {
     setInputValue('');
   };
 
-  const asignarAleatorio = () => {
-    if (puestos.length === 0 || personas.length === 0) return;
-    const shuffled = shuffle(personas);
-    const result = {};
-    const personaCounts = {};
-    personas.forEach((p) => { personaCounts[p] = 0; });
-    puestos.forEach((puesto) => { result[puesto] = []; });
-
-    // Distribute: each person max 2 puestos
-    for (const puesto of puestos) {
-      for (const persona of shuffled) {
-        if (personaCounts[persona] < MAX_ASIGNACIONES_POR_PERSONA && !result[puesto].includes(persona)) {
-          result[puesto].push(persona);
-          personaCounts[persona]++;
-          break;
-        }
-      }
-    }
-    // Fill remaining slots if possible
-    for (const puesto of puestos) {
-      if (result[puesto].length === 0) {
-        for (const persona of shuffle(personas)) {
-          if (personaCounts[persona] < MAX_ASIGNACIONES_POR_PERSONA) {
-            result[puesto].push(persona);
-            personaCounts[persona]++;
-            break;
-          }
-        }
-      }
-    }
-    setAsignaciones(result);
-    setSelectedPuesto(puestos[0]);
+  const removePuesto = (name) => {
+    setPuestos(puestos.filter((p) => p !== name));
+    removeAsignacionesPuesto(name);
   };
 
-  const toggleAsignacion = (persona) => {
-    if (!selectedPuesto) return;
-    setAsignaciones((prev) => {
-      const current = prev[selectedPuesto] || [];
-      if (current.includes(persona)) {
-        return { ...prev, [selectedPuesto]: current.filter((p) => p !== persona) };
-      }
-      // Check max assignments across all puestos
-      let count = 0;
-      for (const key in prev) {
-        if ((prev[key] || []).includes(persona)) count++;
-      }
-      if (count >= MAX_ASIGNACIONES_POR_PERSONA) return prev;
-      return { ...prev, [selectedPuesto]: [...current, persona] };
-    });
+  const removePersona = (name) => {
+    setPersonas(personas.filter((p) => p !== name));
+    removePersonaDeAsignaciones(name);
   };
 
   const reset = () => {
-    goToStep(0);
-    setAsignaciones({});
-    setSelectedPuesto(null);
+    handleGoToStep(0);
+    resetAsignaciones();
   };
 
   const canGoNext = () => {
@@ -199,310 +78,66 @@ export default function App() {
     return false;
   };
 
-  const removePuesto = (name) => {
-    setPuestos(puestos.filter((p) => p !== name));
-    const { [name]: _, ...rest } = asignaciones;
-    setAsignaciones(rest);
-    if (selectedPuesto === name) setSelectedPuesto(null);
-  };
-
-  const removePersona = (name) => {
-    setPersonas(personas.filter((p) => p !== name));
-    const updated = {};
-    for (const key in asignaciones) {
-      updated[key] = asignaciones[key].filter((p) => p !== name);
-    }
-    setAsignaciones(updated);
-  };
-
-  const slideEnter = step > prevStep ? SlideInRight.duration(300) : SlideInLeft.duration(300);
-
-  const renderStepIndicator = () => (
-    <View style={[styles.stepsRow, isWide && styles.stepsRowWide]}>
-      {STEPS.map((s, i) => {
-        const isActive = i === step;
-        const isDone = i < step;
-        return (
-          <Animated.View
-            key={s.key}
-            entering={FadeInDown.delay(i * 80).duration(400)}
-            style={styles.stepIndicatorItem}
-          >
-            <TouchableOpacity
-              onPress={() => { if (isDone) goToStep(i); }}
-              activeOpacity={isDone ? 0.7 : 1}
-              style={[
-                styles.stepCircle,
-                isActive && styles.stepCircleActive,
-                isDone && styles.stepCircleDone,
-              ]}
-            >
-              <Text style={[
-                styles.stepCircleText,
-                (isActive || isDone) && styles.stepCircleTextActive,
-              ]}>
-                {isDone ? '✓' : s.icon}
-              </Text>
-            </TouchableOpacity>
-            {!isWide && (
-              <Text style={[styles.stepLabel, isActive && styles.stepLabelActive]}>
-                {s.label}
-              </Text>
-            )}
-            {isWide && (
-              <Text style={[styles.stepLabelWide, isActive && styles.stepLabelActive]}>
-                {s.label}
-              </Text>
-            )}
-            {i < STEPS.length - 1 && <View style={[styles.stepLine, isDone && styles.stepLineDone]} />}
-          </Animated.View>
-        );
-      })}
-    </View>
-  );
-
-  const renderInputSection = (placeholder, onAdd, items, onRemove, emptyMsg) => (
-    <Animated.View entering={slideEnter} key={`step-${step}`} style={styles.stepContent}>
-      <View style={styles.inputGroup}>
-        <View style={styles.inputWrapper}>
-          <TextInput
-            style={styles.input}
-            placeholder={placeholder}
-            placeholderTextColor={COLORS.textMuted}
-            value={inputValue}
-            onChangeText={handleInputChange}
-            onSubmitEditing={onAdd}
-          />
-        </View>
-        <TouchableOpacity
-          style={[styles.addBtn, !inputValue.trim() && styles.addBtnDisabled]}
-          onPress={onAdd}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.addBtnText}>Agregar</Text>
-        </TouchableOpacity>
-      </View>
-      <View style={styles.chipCount}>
-        <Text style={styles.chipCountText}>{items.length} registrado{items.length !== 1 ? 's' : ''}</Text>
-      </View>
-      <FlatList
-        data={items}
-        keyExtractor={(item) => item}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.listContent}
-        renderItem={({ item, index }) => (
-          <Animated.View entering={FadeInDown.delay(index * 50).duration(300)} layout={LinearTransition.springify()}>
-            <View style={styles.listCard}>
-              <View style={styles.listCardLeft}>
-                <View style={styles.listAvatar}>
-                  <Text style={styles.listAvatarText}>{item.charAt(0).toUpperCase()}</Text>
-                </View>
-                <Text style={styles.listCardText}>{item}</Text>
-              </View>
-              <TouchableOpacity style={styles.removeBtn} onPress={() => onRemove(item)}>
-                <Text style={styles.removeBtnText}>✕</Text>
-              </TouchableOpacity>
-            </View>
-          </Animated.View>
-        )}
-        ListEmptyComponent={
-          <Animated.View entering={FadeIn.duration(400)} style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>{step === 0 ? '🏢' : '👥'}</Text>
-            <Text style={styles.emptyText}>{emptyMsg}</Text>
-          </Animated.View>
-        }
-      />
-    </Animated.View>
-  );
-
-  const renderPuestosList = () => (
-    <ScrollView showsVerticalScrollIndicator={false} style={isWide ? styles.puestosCol : undefined}>
-      {puestos.map((p, i) => {
-        const isActive = selectedPuesto === p;
-        const count = (asignaciones[p] || []).length;
-        return (
-          <Animated.View key={p} entering={FadeInDown.delay(i * 60).duration(300)}>
-            <TouchableOpacity
-              style={[styles.puestoItem, isActive && styles.puestoItemActive]}
-              onPress={() => setSelectedPuesto(p)}
-              activeOpacity={0.8}
-            >
-              <View style={styles.puestoItemLeft}>
-                <View style={[styles.puestoDot, isActive && styles.puestoDotActive]} />
-                <Text style={[styles.puestoItemText, isActive && styles.puestoItemTextActive]}>{p}</Text>
-              </View>
-              {count > 0 && (
-                <View style={[styles.badge, isActive && styles.badgeActive]}>
-                  <Text style={[styles.badgeText, isActive && styles.badgeTextActive]}>{count}</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          </Animated.View>
-        );
-      })}
-    </ScrollView>
-  );
-
-  const renderPersonasList = () => (
-    selectedPuesto ? (
-      <FlatList
-        data={personas}
-        keyExtractor={(item) => item}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.listContent}
-        renderItem={({ item, index }) => {
-          const isAssigned = (asignaciones[selectedPuesto] || []).includes(item);
-          const totalCount = getPersonaCount(item);
-          const isMaxed = totalCount >= MAX_ASIGNACIONES_POR_PERSONA && !isAssigned;
-          return (
-            <Animated.View entering={FadeInDown.delay(index * 40).duration(250)} layout={LinearTransition.springify()}>
-              <TouchableOpacity
-                style={[styles.assignCard, isAssigned && styles.assignCardActive, isMaxed && styles.assignCardDisabled]}
-                onPress={() => toggleAsignacion(item)}
-                activeOpacity={isMaxed ? 1 : 0.7}
-              >
-                <View style={styles.assignLeft}>
-                  <View style={[styles.checkbox, isAssigned && styles.checkboxActive, isMaxed && styles.checkboxDisabled]}>
-                    {isAssigned && <Text style={styles.checkmark}>✓</Text>}
-                  </View>
-                  <View>
-                    <Text style={[styles.assignText, isAssigned && styles.assignTextActive, isMaxed && styles.assignTextDisabled]}>{item}</Text>
-                    {totalCount > 0 && (
-                      <Text style={styles.assignCountHint}>Ya asignado a otro puesto</Text>
-                    )}
-                  </View>
-                </View>
-                {isAssigned && (
-                  <Animated.View entering={FadeIn.duration(200)}>
-                    <View style={styles.assignedBadge}>
-                      <Text style={styles.assignedBadgeText}>Asignado</Text>
-                    </View>
-                  </Animated.View>
-                )}
-                {isMaxed && (
-                  <View style={styles.maxedBadge}>
-                    <Text style={styles.maxedBadgeText}>Máximo</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-            </Animated.View>
-          );
-        }}
-      />
-    ) : (
-      <Animated.View entering={FadeIn.duration(400)} style={styles.emptyState}>
-        <Text style={styles.emptyIcon}>👆</Text>
-        <Text style={styles.emptyText}>Selecciona un puesto para comenzar</Text>
-      </Animated.View>
-    )
-  );
-
-  const renderAsignacion = () => (
-    <Animated.View entering={slideEnter} key="step-2" style={styles.stepContent}>
-      <View style={styles.assignHeader}>
-        <Text style={styles.sectionHint}>Selecciona un puesto y marca las personas asignadas</Text>
-        <TouchableOpacity style={styles.randomBtn} onPress={asignarAleatorio} activeOpacity={0.8}>
-          <Text style={styles.randomBtnText}>🎲 Aleatorio</Text>
-        </TouchableOpacity>
-      </View>
-      {isWide ? (
-        <View style={styles.assignRow}>
-          <View style={styles.assignColLeft}>
-            <Text style={styles.colTitle}>Puestos</Text>
-            {renderPuestosList()}
-          </View>
-          <View style={styles.assignDivider} />
-          <View style={styles.assignColRight}>
-            <Text style={styles.colTitle}>{selectedPuesto ? `Personas → ${selectedPuesto}` : 'Personas'}</Text>
-            {renderPersonasList()}
-          </View>
-        </View>
-      ) : (
-        <>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsScroll}>
-            <View style={styles.tabsRow}>
-              {puestos.map((p, i) => {
-                const isActive = selectedPuesto === p;
-                const count = (asignaciones[p] || []).length;
-                return (
-                  <Animated.View key={p} entering={FadeInDown.delay(i * 60).duration(300)}>
-                    <TouchableOpacity
-                      style={[styles.tab, isActive && styles.tabActive]}
-                      onPress={() => setSelectedPuesto(p)}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={[styles.tabText, isActive && styles.tabTextActive]}>{p}</Text>
-                      {count > 0 && (
-                        <View style={[styles.badge, isActive && styles.badgeActive]}>
-                          <Text style={[styles.badgeText, isActive && styles.badgeTextActive]}>{count}</Text>
-                        </View>
-                      )}
-                    </TouchableOpacity>
-                  </Animated.View>
-                );
-              })}
-            </View>
-          </ScrollView>
-          {renderPersonasList()}
-        </>
-      )}
-    </Animated.View>
-  );
-
-  const renderResumen = () => {
-    const totalAsignados = new Set(Object.values(asignaciones).flat()).size;
-    const totalPuestos = puestos.length;
-    const cubiertos = Object.values(asignaciones).filter((a) => a.length > 0).length;
-    return (
-      <Animated.View entering={slideEnter} key="step-3" style={styles.stepContent}>
-        <View style={styles.statsRowCompact}>
-          <Text style={styles.statInline}>
-            <Text style={styles.statInlineNum}>{totalPuestos}</Text> puestos  ·  <Text style={styles.statInlineNum}>{totalAsignados}</Text> personas  ·  <Text style={[styles.statInlineNum, { color: COLORS.success }]}>{cubiertos}</Text> cubiertos
-          </Text>
-        </View>
-        <ScrollView showsVerticalScrollIndicator={false}>
-          <View style={[styles.resumenGrid, isWide && styles.resumenGridWide]}>
-            {puestos.map((puesto, i) => {
-              const assigned = asignaciones[puesto] || [];
-              const hasAssigned = assigned.length > 0;
-              return (
-                <Animated.View key={puesto} entering={FadeInDown.delay(i * 60).duration(300)} style={[styles.resumenGridItem, isWide && styles.resumenGridItemWide]}>
-                  <View style={[styles.resumenCard, !hasAssigned && styles.resumenCardEmpty]}>
-                    <View style={styles.resumenHeader}>
-                      <View style={[styles.resumenDot, hasAssigned ? styles.resumenDotOk : styles.resumenDotWarn]} />
-                      <Text style={styles.resumenPuesto} numberOfLines={1}>{puesto}</Text>
-                    </View>
-                    {hasAssigned ? (
-                      <View style={styles.resumenPersonas}>
-                        {assigned.map((persona) => (
-                          <View key={persona} style={styles.resumenChip}>
-                            <Text style={styles.resumenChipText} numberOfLines={1}>{persona}</Text>
-                          </View>
-                        ))}
-                      </View>
-                    ) : (
-                      <Text style={styles.resumenEmpty}>Sin asignar</Text>
-                    )}
-                  </View>
-                </Animated.View>
-              );
-            })}
-          </View>
-        </ScrollView>
-      </Animated.View>
-    );
-  };
+  const slideEnter = step > prevStep
+    ? SlideInRight.duration(300)
+    : SlideInLeft.duration(300);
 
   const renderCurrentStep = () => {
     switch (step) {
       case 0:
-        return renderInputSection('Ej: Caja, Bodega, Recepción...', addPuesto, puestos, removePuesto, 'Agrega tu primer puesto de trabajo');
+        return (
+          <InputSection
+            placeholder="Ej: Caja, Bodega, Recepción..."
+            inputValue={inputValue}
+            onChangeText={handleInputChange}
+            onAdd={addPuesto}
+            items={puestos}
+            onRemove={removePuesto}
+            emptyMsg="Agrega tu primer puesto de trabajo"
+            emptyIcon="🏢"
+            enteringAnimation={slideEnter}
+            stepKey={`step-${step}`}
+          />
+        );
       case 1:
-        return renderInputSection('Ej: Juan, María, Carlos...', addPersona, personas, removePersona, 'Agrega las personas disponibles');
+        return (
+          <InputSection
+            placeholder="Ej: Juan, María, Carlos..."
+            inputValue={inputValue}
+            onChangeText={handleInputChange}
+            onAdd={addPersona}
+            items={personas}
+            onRemove={removePersona}
+            emptyMsg="Agrega las personas disponibles"
+            emptyIcon="👥"
+            enteringAnimation={slideEnter}
+            stepKey={`step-${step}`}
+          />
+        );
       case 2:
-        return renderAsignacion();
+        return (
+          <AsignacionScreen
+            enteringAnimation={slideEnter}
+            puestos={puestos}
+            personas={personas}
+            asignaciones={asignaciones}
+            selectedPuesto={selectedPuesto}
+            isWide={isWide}
+            getPersonaCount={getPersonaCount}
+            onSelectPuesto={setSelectedPuesto}
+            onToggle={toggleAsignacion}
+            onAsignarAleatorio={asignarAleatorio}
+          />
+        );
       case 3:
-        return renderResumen();
+        return (
+          <ResumenScreen
+            enteringAnimation={slideEnter}
+            puestos={puestos}
+            asignaciones={asignaciones}
+            isWide={isWide}
+          />
+        );
       default:
         return null;
     }
@@ -514,698 +149,38 @@ export default function App() {
       <View style={[styles.inner, { maxWidth: isWide ? 800 : '100%' }]}>
         <Animated.View entering={FadeInDown.duration(500)}>
           <Text style={styles.header}>Horarios de Trabajo</Text>
-          <Text style={styles.headerSub}>Organiza tu equipo de forma rápida y sencilla</Text>
+          <Text style={styles.headerSub}>
+            Organiza tu equipo de forma rápida y sencilla
+          </Text>
         </Animated.View>
-        {renderStepIndicator()}
+
+        <StepIndicator
+          currentStep={step}
+          isWide={isWide}
+          onGoToStep={handleGoToStep}
+        />
+
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>{STEPS[step].icon} {STEPS[step].label}</Text>
-            <Text style={styles.cardStep}>Paso {step + 1} de {STEPS.length}</Text>
+            <Text style={styles.cardTitle}>
+              {STEPS[step].icon} {STEPS[step].label}
+            </Text>
+            <Text style={styles.cardStep}>
+              Paso {step + 1} de {STEPS.length}
+            </Text>
           </View>
-          <View style={styles.cardBody}>
-            {renderCurrentStep()}
-          </View>
+          <View style={styles.cardBody}>{renderCurrentStep()}</View>
         </View>
-        <View style={styles.navRow}>
-          {step > 0 && (
-            <Animated.View entering={FadeIn.duration(200)} style={styles.navBtnWrap}>
-              <TouchableOpacity style={styles.navBtnBack} onPress={() => goToStep(step - 1)} activeOpacity={0.8}>
-                <Text style={styles.navBtnBackText}>← Atrás</Text>
-              </TouchableOpacity>
-            </Animated.View>
-          )}
-          <View style={{ flex: 1 }} />
-          {step < 3 ? (
-            <Animated.View entering={FadeIn.duration(200)} style={styles.navBtnWrap}>
-              <TouchableOpacity
-                style={[styles.navBtnNext, !canGoNext() && styles.navBtnDisabled]}
-                onPress={() => { if (canGoNext()) goToStep(step + 1); }}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.navBtnNextText}>Siguiente →</Text>
-              </TouchableOpacity>
-            </Animated.View>
-          ) : (
-            <Animated.View entering={FadeIn.duration(200)} style={styles.navBtnWrap}>
-              <TouchableOpacity style={styles.navBtnReset} onPress={reset} activeOpacity={0.8}>
-                <Text style={styles.navBtnNextText}>🔄 Nuevo Horario</Text>
-              </TouchableOpacity>
-            </Animated.View>
-          )}
-        </View>
+
+        <NavigationBar
+          step={step}
+          totalSteps={STEPS.length}
+          canGoNext={canGoNext()}
+          onBack={() => handleGoToStep(step - 1)}
+          onNext={() => handleGoToStep(step + 1)}
+          onReset={reset}
+        />
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.bg,
-    alignItems: 'center',
-  },
-  inner: {
-    flex: 1,
-    width: '100%',
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'web' ? 40 : 56,
-    paddingBottom: 16,
-  },
-  header: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: COLORS.text,
-    textAlign: 'center',
-    letterSpacing: -0.5,
-  },
-  headerSub: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-    marginTop: 4,
-    marginBottom: 24,
-  },
-  stepsRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'flex-start',
-    marginBottom: 20,
-    gap: 4,
-  },
-  stepsRowWide: {
-    gap: 8,
-  },
-  stepIndicatorItem: {
-    alignItems: 'center',
-    flex: 1,
-    maxWidth: 100,
-    position: 'relative',
-  },
-  stepCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: COLORS.card,
-    borderWidth: 2,
-    borderColor: COLORS.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Platform.select({
-      web: { boxShadow: '0 1px 3px rgba(0,0,0,0.08)' },
-      default: { elevation: 1 },
-    }),
-  },
-  stepCircleActive: {
-    borderColor: COLORS.primary,
-    backgroundColor: COLORS.primaryBg,
-    ...Platform.select({
-      web: { boxShadow: '0 0 0 3px rgba(79,70,229,0.15)' },
-      default: { elevation: 3 },
-    }),
-  },
-  stepCircleDone: {
-    borderColor: COLORS.success,
-    backgroundColor: COLORS.successBg,
-  },
-  stepCircleText: {
-    fontSize: 18,
-  },
-  stepCircleTextActive: {
-    fontWeight: '700',
-  },
-  stepLabel: {
-    fontSize: 11,
-    color: COLORS.textMuted,
-    marginTop: 6,
-    textAlign: 'center',
-  },
-  stepLabelWide: {
-    fontSize: 12,
-    color: COLORS.textMuted,
-    marginTop: 6,
-    textAlign: 'center',
-  },
-  stepLabelActive: {
-    color: COLORS.primary,
-    fontWeight: '600',
-  },
-  stepLine: {
-    position: 'absolute',
-    top: 22,
-    right: -20,
-    width: 36,
-    height: 2,
-    backgroundColor: COLORS.border,
-    borderRadius: 1,
-  },
-  stepLineDone: {
-    backgroundColor: COLORS.success,
-  },
-  card: {
-    flex: 1,
-    backgroundColor: COLORS.card,
-    borderRadius: 16,
-    ...Platform.select({
-      web: { boxShadow: '0 4px 24px rgba(15,23,42,0.08)' },
-      default: { elevation: 4 },
-    }),
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    backgroundColor: '#FAFBFC',
-  },
-  cardTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: COLORS.text,
-  },
-  cardStep: {
-    fontSize: 13,
-    color: COLORS.textMuted,
-    fontWeight: '500',
-  },
-  cardBody: {
-    flex: 1,
-    padding: 20,
-  },
-  stepContent: {
-    flex: 1,
-  },
-  inputGroup: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 8,
-  },
-  inputWrapper: {
-    flex: 1,
-  },
-  input: {
-    borderWidth: 1.5,
-    borderColor: COLORS.border,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
-    backgroundColor: COLORS.bg,
-    color: COLORS.text,
-    ...Platform.select({
-      web: { outlineStyle: 'none' },
-      default: {},
-    }),
-  },
-  addBtn: {
-    paddingHorizontal: 20,
-    borderRadius: 10,
-    backgroundColor: COLORS.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Platform.select({
-      web: { boxShadow: '0 2px 8px rgba(79,70,229,0.3)' },
-      default: { elevation: 3 },
-    }),
-  },
-  addBtnDisabled: {
-    opacity: 0.5,
-  },
-  addBtnText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  chipCount: {
-    marginBottom: 12,
-  },
-  chipCountText: {
-    fontSize: 13,
-    color: COLORS.textMuted,
-    fontWeight: '500',
-  },
-  listContent: {
-    paddingBottom: 8,
-  },
-  listCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: COLORS.bg,
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  listCardLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  listAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: COLORS.primaryBg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  listAvatarText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: COLORS.primary,
-  },
-  listCardText: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: COLORS.text,
-  },
-  removeBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: COLORS.dangerBg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  removeBtnText: {
-    color: COLORS.danger,
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  emptyState: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 40,
-  },
-  emptyIcon: {
-    fontSize: 40,
-    marginBottom: 12,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: COLORS.textMuted,
-    textAlign: 'center',
-  },
-
-  sectionHint: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    marginBottom: 12,
-    flex: 1,
-  },
-  assignHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-    gap: 10,
-  },
-  randomBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#F59E0B',
-    ...Platform.select({
-      web: { boxShadow: '0 2px 8px rgba(245,158,11,0.3)' },
-      default: { elevation: 2 },
-    }),
-  },
-  randomBtnText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  assignRow: {
-    flex: 1,
-    flexDirection: 'row',
-    gap: 0,
-  },
-  assignColLeft: {
-    width: 220,
-    paddingRight: 12,
-  },
-  assignDivider: {
-    width: 1,
-    backgroundColor: COLORS.border,
-    marginHorizontal: 4,
-  },
-  assignColRight: {
-    flex: 1,
-    paddingLeft: 12,
-  },
-  colTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: COLORS.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 10,
-  },
-  puestosCol: {
-    flex: 1,
-  },
-  puestoItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    marginBottom: 4,
-  },
-  puestoItemActive: {
-    backgroundColor: COLORS.primaryBg,
-  },
-  puestoItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    flex: 1,
-  },
-  puestoDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: COLORS.border,
-  },
-  puestoDotActive: {
-    backgroundColor: COLORS.primary,
-  },
-  puestoItemText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: COLORS.text,
-  },
-  puestoItemTextActive: {
-    color: COLORS.primary,
-    fontWeight: '700',
-  },
-  tabsScroll: {
-    flexGrow: 0,
-    marginBottom: 16,
-  },
-  tabsRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  tab: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 24,
-    backgroundColor: COLORS.bg,
-    borderWidth: 1.5,
-    borderColor: COLORS.border,
-  },
-  tabActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-    ...Platform.select({
-      web: { boxShadow: '0 2px 8px rgba(79,70,229,0.3)' },
-      default: { elevation: 2 },
-    }),
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-  },
-  tabTextActive: {
-    color: '#fff',
-  },
-  badge: {
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: COLORS.primaryBg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 6,
-  },
-  badgeActive: {
-    backgroundColor: 'rgba(255,255,255,0.25)',
-  },
-  badgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: COLORS.primary,
-  },
-  badgeTextActive: {
-    color: '#fff',
-  },
-  assignCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 14,
-    borderRadius: 10,
-    backgroundColor: COLORS.bg,
-    borderWidth: 1.5,
-    borderColor: COLORS.border,
-    marginBottom: 8,
-  },
-  assignCardActive: {
-    backgroundColor: COLORS.primaryBg,
-    borderColor: COLORS.primaryLight,
-  },
-  assignLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: COLORS.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.card,
-  },
-  checkboxActive: {
-    borderColor: COLORS.primary,
-    backgroundColor: COLORS.primary,
-  },
-  checkmark: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  assignText: {
-    fontSize: 15,
-    color: COLORS.text,
-    fontWeight: '500',
-  },
-  assignTextActive: {
-    color: COLORS.primary,
-    fontWeight: '600',
-  },
-  assignedBadge: {
-    backgroundColor: COLORS.successBg,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  assignedBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.success,
-  },
-  assignCardDisabled: {
-    opacity: 0.5,
-  },
-  checkboxDisabled: {
-    borderColor: COLORS.textMuted,
-    backgroundColor: COLORS.bg,
-  },
-  assignTextDisabled: {
-    color: COLORS.textMuted,
-  },
-  assignCountHint: {
-    fontSize: 11,
-    color: COLORS.textMuted,
-    marginTop: 2,
-  },
-  maxedBadge: {
-    backgroundColor: COLORS.dangerBg,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  maxedBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.danger,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 20,
-  },
-  statsRowCompact: {
-    marginBottom: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: COLORS.bg,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  statInline: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-  },
-  statInlineNum: {
-    fontWeight: '800',
-    fontSize: 15,
-    color: COLORS.primary,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: COLORS.bg,
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  statNumber: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: COLORS.primary,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: COLORS.textMuted,
-    fontWeight: '500',
-    marginTop: 2,
-  },
-  resumenCard: {
-    backgroundColor: COLORS.bg,
-    borderRadius: 10,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderLeftWidth: 3,
-    borderLeftColor: COLORS.success,
-    flex: 1,
-  },
-  resumenCardEmpty: {
-    borderLeftColor: COLORS.textMuted,
-    opacity: 0.6,
-  },
-  resumenGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  resumenGridWide: {
-    gap: 10,
-  },
-  resumenGridItem: {
-    width: '100%',
-  },
-  resumenGridItemWide: {
-    width: '48.5%',
-  },
-  resumenHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 6,
-  },
-  resumenDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  resumenDotOk: {
-    backgroundColor: COLORS.success,
-  },
-  resumenDotWarn: {
-    backgroundColor: COLORS.textMuted,
-  },
-  resumenPuesto: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '700',
-    color: COLORS.text,
-  },
-  resumenPersonas: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-  },
-  resumenChip: {
-    backgroundColor: COLORS.primaryBg,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 12,
-  },
-  resumenChipText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.primary,
-  },
-  resumenEmpty: {
-    fontSize: 12,
-    color: COLORS.textMuted,
-    fontStyle: 'italic',
-  },
-  navRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingTop: 14,
-    gap: 10,
-  },
-  navBtnWrap: {},
-  navBtnBack: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 10,
-    backgroundColor: COLORS.card,
-    borderWidth: 1.5,
-    borderColor: COLORS.border,
-  },
-  navBtnBackText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-  },
-  navBtnNext: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 10,
-    backgroundColor: COLORS.primary,
-    ...Platform.select({
-      web: { boxShadow: '0 2px 12px rgba(79,70,229,0.3)' },
-      default: { elevation: 3 },
-    }),
-  },
-  navBtnDisabled: {
-    opacity: 0.4,
-  },
-  navBtnNextText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  navBtnReset: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 10,
-    backgroundColor: COLORS.danger,
-    ...Platform.select({
-      web: { boxShadow: '0 2px 12px rgba(239,68,68,0.3)' },
-      default: { elevation: 3 },
-    }),
-  },
-});
