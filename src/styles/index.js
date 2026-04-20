@@ -1,4 +1,5 @@
 export { appStyles } from './app.styles';
+export { wizardStyles } from './wizard.styles';
 export { stepIndicatorStyles } from './stepIndicator.styles';
 export { inputSectionStyles } from './inputSection.styles';
 export { asignacionStyles } from './asignacion.styles';

@@ -12,7 +12,7 @@ import { useStorage, useAsignaciones, useStepper } from '../hooks';
 import { StepIndicator, InputSection, NavigationBar } from '../components';
 import { AsignacionScreen } from './AsignacionScreen';
 import { ResumenScreen } from './ResumenScreen';
-import { appStyles as styles } from '../styles/app.styles';
+import { wizardStyles as styles } from '../styles/wizard.styles';
 
 export const HorarioWizard = ({ empresa, horario, onBack }) => {
   const { width } = useWindowDimensions();
@@ -150,35 +150,33 @@ export const HorarioWizard = ({ empresa, horario, onBack }) => {
   };
 
   return (
-    <>
-      <Animated.View entering={FadeInDown.duration(500)}>
+    <View style={styles.wrapper}>
+      {/* Compact header */}
+      <Animated.View entering={FadeInDown.duration(400)} style={styles.topBar}>
         <TouchableOpacity onPress={onBack} style={styles.backBtn} activeOpacity={0.7}>
           <Text style={styles.backBtnText}>← {empresa.name}</Text>
         </TouchableOpacity>
-        <Text style={styles.header}>{horario.name}</Text>
-        <Text style={styles.headerSub}>
-          {empresa.name} · Organiza tu equipo
-        </Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.title} numberOfLines={1}>{horario.name}</Text>
+          <Text style={styles.stepBadge}>
+            {STEPS[step].icon} {STEPS[step].label} · {step + 1}/{STEPS.length}
+          </Text>
+        </View>
       </Animated.View>
 
+      {/* Step indicator */}
       <StepIndicator
         currentStep={step}
         isWide={isWide}
         onGoToStep={handleGoToStep}
       />
 
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>
-            {STEPS[step].icon} {STEPS[step].label}
-          </Text>
-          <Text style={styles.cardStep}>
-            Paso {step + 1} de {STEPS.length}
-          </Text>
-        </View>
-        <View style={styles.cardBody}>{renderCurrentStep()}</View>
+      {/* Main content — takes all remaining space */}
+      <View style={styles.content}>
+        {renderCurrentStep()}
       </View>
 
+      {/* Navigation */}
       <NavigationBar
         step={step}
         totalSteps={STEPS.length}
@@ -187,6 +185,6 @@ export const HorarioWizard = ({ empresa, horario, onBack }) => {
         onNext={() => handleGoToStep(step + 1)}
         onReset={reset}
       />
-    </>
+    </View>
   );
 };

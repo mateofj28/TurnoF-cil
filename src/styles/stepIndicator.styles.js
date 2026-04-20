@@ -6,7 +6,7 @@ export const stepIndicatorStyles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'flex-start',
-    marginBottom: 20,
+    marginBottom: 16,
     gap: 4,
   },
   stepsRowWide: {
@@ -15,13 +15,13 @@ export const stepIndicatorStyles = StyleSheet.create({
   stepIndicatorItem: {
     alignItems: 'center',
     flex: 1,
-    maxWidth: 100,
+    maxWidth: 90,
     position: 'relative',
   },
   stepCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: COLORS.card,
     borderWidth: 2,
     borderColor: COLORS.border,
@@ -45,21 +45,21 @@ export const stepIndicatorStyles = StyleSheet.create({
     backgroundColor: COLORS.successBg,
   },
   stepCircleText: {
-    fontSize: 18,
+    fontSize: 16,
   },
   stepCircleTextActive: {
     fontWeight: '700',
   },
   stepLabel: {
-    fontSize: 11,
+    fontSize: 10,
     color: COLORS.textMuted,
-    marginTop: 6,
+    marginTop: 4,
     textAlign: 'center',
   },
   stepLabelWide: {
-    fontSize: 12,
+    fontSize: 11,
     color: COLORS.textMuted,
-    marginTop: 6,
+    marginTop: 4,
     textAlign: 'center',
   },
   stepLabelActive: {
@@ -68,9 +68,9 @@ export const stepIndicatorStyles = StyleSheet.create({
   },
   stepLine: {
     position: 'absolute',
-    top: 22,
-    right: -20,
-    width: 36,
+    top: 19,
+    right: -16,
+    width: 28,
     height: 2,
     backgroundColor: COLORS.border,
     borderRadius: 1,

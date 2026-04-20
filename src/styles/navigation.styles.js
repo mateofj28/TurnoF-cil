@@ -5,26 +5,27 @@ export const navigationStyles = StyleSheet.create({
   navRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 14,
+    paddingTop: 12,
+    paddingBottom: 4,
     gap: 10,
   },
   navBtnWrap: {},
   navBtnBack: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
     borderRadius: 10,
     backgroundColor: COLORS.card,
     borderWidth: 1.5,
     borderColor: COLORS.border,
   },
   navBtnBackText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
     color: COLORS.textSecondary,
   },
   navBtnNext: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
+    paddingVertical: 10,
+    paddingHorizontal: 22,
     borderRadius: 10,
     backgroundColor: COLORS.primary,
     ...Platform.select({
@@ -36,13 +37,13 @@ export const navigationStyles = StyleSheet.create({
     opacity: 0.4,
   },
   navBtnNextText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
     color: '#fff',
   },
   navBtnReset: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
+    paddingVertical: 10,
+    paddingHorizontal: 22,
     borderRadius: 10,
     backgroundColor: COLORS.danger,
     ...Platform.select({
