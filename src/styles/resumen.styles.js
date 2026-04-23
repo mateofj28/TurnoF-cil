@@ -7,14 +7,51 @@ export const resumenStyles = StyleSheet.create({
   },
 
   // Stats
-  statsBar: {
+  topRow: {
     marginBottom: 10,
+    gap: 8,
+  },
+  statsBar: {
     paddingVertical: 6,
     paddingHorizontal: 12,
     backgroundColor: COLORS.card,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: COLORS.border,
+  },
+  shareRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  whatsappBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#25D366',
+    alignItems: 'center',
+    ...Platform.select({
+      web: { boxShadow: '0 2px 8px rgba(37,211,102,0.3)' },
+      default: { elevation: 2 },
+    }),
+  },
+  whatsappBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  copyBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: COLORS.card,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+    alignItems: 'center',
+  },
+  copyBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
   },
   statInline: {
     fontSize: 13,
@@ -253,5 +290,30 @@ export const resumenStyles = StyleSheet.create({
     color: COLORS.textMuted,
     fontStyle: 'italic',
     paddingLeft: 12,
+  },
+
+  // Rest section
+  restSection: {
+    marginTop: 6,
+    paddingTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  restLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.textMuted,
+    marginBottom: 4,
+  },
+  restChip: {
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  restChipText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#92400E',
   },
 });

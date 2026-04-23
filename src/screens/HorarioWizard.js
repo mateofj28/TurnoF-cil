@@ -152,7 +152,10 @@ export const HorarioWizard = ({ empresa, horario, onBack }) => {
           <ResumenScreen
             enteringAnimation={slideEnter}
             puestos={puestos}
+            personas={personas}
             asignaciones={asignaciones}
+            horarioName={horario.name}
+            empresaName={empresa.name}
             isWide={isWide}
           />
         );
