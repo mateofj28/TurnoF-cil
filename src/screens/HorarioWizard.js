@@ -36,6 +36,7 @@ export const HorarioWizard = ({ empresa, horario, onBack }) => {
     getDiaAsignaciones,
     getPersonaCount,
     getDiaCount,
+    descansosMap,
     asignarAleatorio,
     asignarAleatorioSemana,
     toggleAsignacion,
@@ -139,6 +140,7 @@ export const HorarioWizard = ({ empresa, horario, onBack }) => {
             selectedPuesto={selectedPuesto}
             isWide={isWide}
             getPersonaCount={getPersonaCount}
+            descansosMap={descansosMap}
             onSelectPuesto={setSelectedPuesto}
             onToggle={toggleAsignacion}
             onAsignarAleatorio={asignarAleatorio}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { DIAS, MAX_ASIGNACIONES_POR_PERSONA } from '../constants';
 import { shuffle } from '../utils';
 import {
@@ -7,8 +7,10 @@ import {
   clearAsignaciones,
 } from '../services';
 
+// Target rest days per week (ideal balance)
+const DESCANSO_IDEAL = 2;
+
 export const useAsignaciones = (empresaId, horarioId, puestos, personas) => {
-  // asignaciones = { lunes: { Caja: ["Juan"], Bodega: ["María"] }, martes: {...}, ... }
   const [asignaciones, setAsignaciones] = useState({});
   const [selectedDia, setSelectedDia] = useState(DIAS[0].key);
   const [selectedPuesto, setSelectedPuesto] = useState(null);
@@ -19,17 +21,14 @@ export const useAsignaciones = (empresaId, horarioId, puestos, personas) => {
       setSelectedPuesto(null);
       return;
     }
-
     const unsub = subscribeAsignaciones(empresaId, horarioId, (data) => {
       setAsignaciones(data);
     });
     return () => unsub();
   }, [empresaId, horarioId]);
 
-  // Get assignments for the current day
   const getDiaAsignaciones = () => asignaciones[selectedDia] || {};
 
-  // Count how many puestos a persona is assigned to on the current day
   const getPersonaCount = (persona) => {
     const diaData = getDiaAsignaciones();
     let count = 0;
@@ -39,16 +38,81 @@ export const useAsignaciones = (empresaId, horarioId, puestos, personas) => {
     return count;
   };
 
+  // ==================== DESCANSOS ====================
+
+  // Check if a persona works on a specific day
+  const personaTrabajaEnDia = (persona, diaKey) => {
+    const diaData = asignaciones[diaKey] || {};
+    for (const key in diaData) {
+      if ((diaData[key] || []).includes(persona)) return true;
+    }
+    return false;
+  };
+
+  // Count how many days a persona rests (not assigned to any puesto)
+  const getDescansos = (persona) => {
+    let descansos = 0;
+    for (const dia of DIAS) {
+      if (!personaTrabajaEnDia(persona, dia.key)) descansos++;
+    }
+    return descansos;
+  };
+
+  // Count how many days a persona works
+  const getDiasTrabajados = (persona) => {
+    return 7 - getDescansos(persona);
+  };
+
+  // Precompute rest stats for all personas (for display)
+  const descansosMap = useMemo(() => {
+    const map = {};
+    for (const persona of personas) {
+      const descansos = getDescansos(persona);
+      const trabajados = 7 - descansos;
+      map[persona] = { descansos, trabajados };
+    }
+    return map;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [asignaciones, personas]);
+
+  // ==================== ALEATORIO INTELIGENTE ====================
+
+  // Sort personas: those with fewer rest days get priority to rest,
+  // those with more rest days get priority to work
+  const sortByNeedToWork = (personasList) => {
+    return [...personasList].sort((a, b) => {
+      const descA = descansosMap[a]?.descansos || 0;
+      const descB = descansosMap[b]?.descansos || 0;
+      // More rest = should work more → goes first
+      return descB - descA;
+    });
+  };
+
   const asignarAleatorio = async () => {
     if (puestos.length === 0 || personas.length === 0) return;
-    const shuffled = shuffle(personas);
+
+    // Sort by who needs to work (most rested first), then shuffle within groups
+    const sorted = sortByNeedToWork(personas);
+    // Add some randomness within similar rest levels
+    const grouped = [];
+    let i = 0;
+    while (i < sorted.length) {
+      const currentDescanso = descansosMap[sorted[i]]?.descansos || 0;
+      const group = [];
+      while (i < sorted.length && (descansosMap[sorted[i]]?.descansos || 0) === currentDescanso) {
+        group.push(sorted[i]);
+        i++;
+      }
+      grouped.push(...shuffle(group));
+    }
+
     const result = {};
     const personaCounts = {};
     personas.forEach((p) => { personaCounts[p] = 0; });
     puestos.forEach((puesto) => { result[puesto] = []; });
 
     for (const puesto of puestos) {
-      for (const persona of shuffled) {
+      for (const persona of grouped) {
         if (
           personaCounts[persona] < MAX_ASIGNACIONES_POR_PERSONA &&
           !result[puesto].includes(persona)
@@ -76,19 +140,36 @@ export const useAsignaciones = (empresaId, horarioId, puestos, personas) => {
     setSelectedPuesto(puestos[0]);
   };
 
-  // Random assign all days at once
   const asignarAleatorioSemana = async () => {
     if (puestos.length === 0 || personas.length === 0) return;
 
+    // Track cumulative work days across the week for balance
+    const weekWorkCounts = {};
+    personas.forEach((p) => { weekWorkCounts[p] = 0; });
+
     for (const dia of DIAS) {
-      const shuffled = shuffle(personas);
+      // Sort: those who have worked less this week get priority
+      const sorted = [...personas].sort((a, b) => weekWorkCounts[a] - weekWorkCounts[b]);
+      // Shuffle within same work count for variety
+      const grouped = [];
+      let i = 0;
+      while (i < sorted.length) {
+        const currentCount = weekWorkCounts[sorted[i]];
+        const group = [];
+        while (i < sorted.length && weekWorkCounts[sorted[i]] === currentCount) {
+          group.push(sorted[i]);
+          i++;
+        }
+        grouped.push(...shuffle(group));
+      }
+
       const result = {};
       const personaCounts = {};
       personas.forEach((p) => { personaCounts[p] = 0; });
       puestos.forEach((puesto) => { result[puesto] = []; });
 
       for (const puesto of puestos) {
-        for (const persona of shuffled) {
+        for (const persona of grouped) {
           if (
             personaCounts[persona] < MAX_ASIGNACIONES_POR_PERSONA &&
             !result[puesto].includes(persona)
@@ -110,6 +191,11 @@ export const useAsignaciones = (empresaId, horarioId, puestos, personas) => {
             }
           }
         }
+      }
+
+      // Update cumulative counts
+      for (const persona of personas) {
+        if (personaCounts[persona] > 0) weekWorkCounts[persona]++;
       }
 
       await saveDiaAsignaciones(empresaId, horarioId, dia.key, result);
@@ -146,7 +232,6 @@ export const useAsignaciones = (empresaId, horarioId, puestos, personas) => {
   };
 
   const removeAsignacionesPuesto = async (puesto) => {
-    // Remove puesto from all days
     for (const dia of DIAS) {
       const diaData = asignaciones[dia.key];
       if (diaData && diaData[puesto]) {
@@ -174,7 +259,6 @@ export const useAsignaciones = (empresaId, horarioId, puestos, personas) => {
     }
   };
 
-  // Check if any day has assignments
   const hasAnyAsignacion = () => {
     for (const dia of DIAS) {
       const diaData = asignaciones[dia.key];
@@ -187,7 +271,6 @@ export const useAsignaciones = (empresaId, horarioId, puestos, personas) => {
     return false;
   };
 
-  // Count assignments for a specific day
   const getDiaCount = (diaKey) => {
     const diaData = asignaciones[diaKey] || {};
     let count = 0;
@@ -206,6 +289,7 @@ export const useAsignaciones = (empresaId, horarioId, puestos, personas) => {
     getDiaAsignaciones,
     getPersonaCount,
     getDiaCount,
+    descansosMap,
     asignarAleatorio,
     asignarAleatorioSemana,
     toggleAsignacion,

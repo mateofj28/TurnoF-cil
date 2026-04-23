@@ -251,6 +251,43 @@ export const asignacionStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    flex: 1,
+  },
+  assignRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginLeft: 8,
+  },
+  assignCardWarning: {
+    borderColor: '#FBBF24',
+    backgroundColor: '#FFFBEB',
+  },
+
+  // Rest info
+  restInfo: {
+    marginTop: 2,
+  },
+  restRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  restText: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: COLORS.textMuted,
+  },
+  restTextDanger: {
+    color: COLORS.danger,
+    fontWeight: '600',
+  },
+  restTextOk: {
+    color: COLORS.success,
+  },
+  workText: {
+    fontSize: 11,
+    color: COLORS.textMuted,
   },
   checkbox: {
     width: 22,

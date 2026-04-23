@@ -109,11 +109,39 @@ const PuestosListWide = ({ puestos, selectedPuesto, diaAsignaciones, onSelect })
   </ScrollView>
 );
 
+const RestIndicator = ({ descansos, trabajados }) => {
+  if (trabajados === 0) return null;
+
+  const needsRest = descansos === 0;
+  const wellRested = descansos >= 2;
+
+  return (
+    <View style={styles.restInfo}>
+      <View style={styles.restRow}>
+        <Text style={[
+          styles.restText,
+          needsRest && styles.restTextDanger,
+          wellRested && styles.restTextOk,
+        ]}>
+          {descansos === 0
+            ? '⚠️ Sin descanso'
+            : `😴 ${descansos} día${descansos !== 1 ? 's' : ''} libre${descansos !== 1 ? 's' : ''}`
+          }
+        </Text>
+        <Text style={styles.workText}>
+          · {trabajados} trabajado{trabajados !== 1 ? 's' : ''}
+        </Text>
+      </View>
+    </View>
+  );
+};
+
 const PersonasList = ({
   personas,
   selectedPuesto,
   diaAsignaciones,
   getPersonaCount,
+  descansosMap,
   onToggle,
 }) => {
   if (!selectedPuesto) {
@@ -125,9 +153,16 @@ const PersonasList = ({
     );
   }
 
+  // Sort: those who need rest most (0 descansos) at top, then by fewer descansos
+  const sorted = [...personas].sort((a, b) => {
+    const da = descansosMap[a]?.descansos ?? 7;
+    const db = descansosMap[b]?.descansos ?? 7;
+    return da - db;
+  });
+
   return (
     <FlatList
-      data={personas}
+      data={sorted}
       keyExtractor={(item) => item}
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.listContent}
@@ -135,9 +170,11 @@ const PersonasList = ({
         const isAssigned = (diaAsignaciones[selectedPuesto] || []).includes(item);
         const totalCount = getPersonaCount(item);
         const isMaxed = totalCount >= MAX_ASIGNACIONES_POR_PERSONA && !isAssigned;
+        const stats = descansosMap[item] || { descansos: 7, trabajados: 0 };
+
         return (
           <Animated.View
-            entering={FadeInDown.delay(index * 30).duration(200)}
+            entering={FadeInDown.delay(index * 25).duration(200)}
             layout={LinearTransition.springify()}
           >
             <TouchableOpacity
@@ -145,6 +182,7 @@ const PersonasList = ({
                 styles.assignCard,
                 isAssigned && styles.assignCardActive,
                 isMaxed && styles.assignCardDisabled,
+                stats.descansos === 0 && !isAssigned && styles.assignCardWarning,
               ]}
               onPress={() => onToggle(item)}
               activeOpacity={isMaxed ? 1 : 0.7}
@@ -159,28 +197,36 @@ const PersonasList = ({
                 >
                   {isAssigned && <Text style={styles.checkmark}>✓</Text>}
                 </View>
-                <Text
-                  style={[
-                    styles.assignText,
-                    isAssigned && styles.assignTextActive,
-                    isMaxed && styles.assignTextDisabled,
-                  ]}
-                >
-                  {item}
-                </Text>
-              </View>
-              {isAssigned && (
-                <Animated.View entering={FadeIn.duration(200)}>
-                  <View style={styles.assignedBadge}>
-                    <Text style={styles.assignedBadgeText}>Asignado</Text>
-                  </View>
-                </Animated.View>
-              )}
-              {isMaxed && (
-                <View style={styles.maxedBadge}>
-                  <Text style={styles.maxedBadgeText}>Máximo</Text>
+                <View>
+                  <Text
+                    style={[
+                      styles.assignText,
+                      isAssigned && styles.assignTextActive,
+                      isMaxed && styles.assignTextDisabled,
+                    ]}
+                  >
+                    {item}
+                  </Text>
+                  <RestIndicator
+                    descansos={stats.descansos}
+                    trabajados={stats.trabajados}
+                  />
                 </View>
-              )}
+              </View>
+              <View style={styles.assignRight}>
+                {isAssigned && (
+                  <Animated.View entering={FadeIn.duration(200)}>
+                    <View style={styles.assignedBadge}>
+                      <Text style={styles.assignedBadgeText}>Asignado</Text>
+                    </View>
+                  </Animated.View>
+                )}
+                {isMaxed && (
+                  <View style={styles.maxedBadge}>
+                    <Text style={styles.maxedBadgeText}>Máximo</Text>
+                  </View>
+                )}
+              </View>
             </TouchableOpacity>
           </Animated.View>
         );
@@ -200,6 +246,7 @@ export const AsignacionScreen = ({
   selectedPuesto,
   isWide,
   getPersonaCount,
+  descansosMap,
   onSelectPuesto,
   onToggle,
   onAsignarAleatorio,
@@ -210,14 +257,12 @@ export const AsignacionScreen = ({
 
   return (
     <Animated.View entering={enteringAnimation} key="step-2" style={styles.stepContent}>
-      {/* Day selector */}
       <DaySelector
         selectedDia={selectedDia}
         onSelectDia={onSelectDia}
         getDiaCount={getDiaCount}
       />
 
-      {/* Action buttons */}
       <View style={styles.assignHeader}>
         <Text style={styles.sectionHint} numberOfLines={1}>
           {diaLabel} · Asigna personas a puestos
@@ -230,7 +275,6 @@ export const AsignacionScreen = ({
         </TouchableOpacity>
       </View>
 
-      {/* Puestos + Personas */}
       {isWide ? (
         <View style={styles.assignRow}>
           <View style={styles.assignColLeft}>
@@ -252,6 +296,7 @@ export const AsignacionScreen = ({
               selectedPuesto={selectedPuesto}
               diaAsignaciones={diaAsignaciones}
               getPersonaCount={getPersonaCount}
+              descansosMap={descansosMap}
               onToggle={onToggle}
             />
           </View>
@@ -269,6 +314,7 @@ export const AsignacionScreen = ({
               selectedPuesto={selectedPuesto}
             diaAsignaciones={diaAsignaciones}
             getPersonaCount={getPersonaCount}
+              descansosMap={descansosMap}
             onToggle={onToggle}
           />
         </>
