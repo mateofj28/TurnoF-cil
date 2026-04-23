@@ -58,9 +58,8 @@ export const ResumenScreen = ({
   asignaciones,
   horarioName,
   empresaName,
-  isWide,
 }) => {
-  const [selectedDia, setSelectedDia] = useState(null);
+  const [expandedDia, setExpandedDia] = useState(null);
 
   const totalPersonas = new Set(
     DIAS.flatMap((dia) => {
@@ -89,55 +88,13 @@ export const ResumenScreen = ({
     }
   };
 
-  // Render expanded day detail
-  const renderDayDetail = (diaKey) => {
-    const diaData = asignaciones[diaKey] || {};
-    const resters = getResters(diaKey, asignaciones, personas);
-    const diaLabel = DIAS.find((d) => d.key === diaKey)?.label || '';
-
-    return (
-      <Animated.View entering={FadeIn.duration(200)} style={styles.detail}>
-        <Text style={styles.detailTitle}>{diaLabel}</Text>
-
-        {/* Puestos */}
-        {puestos.map((puesto) => {
-          const assigned = diaData[puesto] || [];
-          if (assigned.length === 0) return null;
-          return (
-            <View key={puesto} style={styles.detailPuesto}>
-              <Text style={styles.detailPuestoName}>{puesto}</Text>
-              <View style={styles.detailChipsRow}>
-                {assigned.map((p) => (
-                  <View key={p} style={styles.detailChip}>
-                    <View style={styles.detailChipDot} />
-                    <Text style={styles.detailChipText}>{p}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          );
-        })}
-
-        {/* Descansan */}
-        {resters.length > 0 && (
-          <View style={styles.detailRest}>
-            <Text style={styles.detailRestLabel}>Descansan</Text>
-            <View style={styles.detailChipsRow}>
-              {resters.map((p) => (
-                <View key={p} style={styles.detailRestChip}>
-                  <Text style={styles.detailRestChipText}>{p}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        )}
-      </Animated.View>
-    );
+  const toggleDia = (diaKey) => {
+    setExpandedDia(expandedDia === diaKey ? null : diaKey);
   };
 
   return (
     <Animated.View entering={enteringAnimation} key="step-3" style={styles.container}>
-      {/* Stats cards */}
+      {/* Stats */}
       <View style={styles.statsRow}>
         <View style={styles.statCard}>
           <Text style={styles.statValue}>{puestos.length}</Text>
@@ -153,77 +110,108 @@ export const ResumenScreen = ({
         </View>
       </View>
 
-      {/* Week overview */}
+      {/* Days list — scrollable */}
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollArea}>
-        <View style={[styles.weekGrid, isWide && styles.weekGridWide]}>
-          {DIAS.map((dia, i) => {
-            const workCount = getDiaWorkCount(dia.key);
-            const restCount = getDiaRestCount(dia.key);
-            const isExpanded = selectedDia === dia.key;
-            const hasData = workCount > 0;
+        {DIAS.map((dia, i) => {
+          const workCount = getDiaWorkCount(dia.key);
+          const restCount = getDiaRestCount(dia.key);
+          const isExpanded = expandedDia === dia.key;
+          const hasData = workCount > 0;
+          const diaData = asignaciones[dia.key] || {};
+          const resters = getResters(dia.key, asignaciones, personas);
 
-            return (
-              <Animated.View
-                key={dia.key}
-                entering={FadeInDown.delay(i * 40).duration(200)}
-                style={isWide ? styles.weekItemWide : undefined}
+          return (
+            <Animated.View
+              key={dia.key}
+              entering={FadeInDown.delay(i * 35).duration(200)}
+              style={styles.dayBlock}
+            >
+              {/* Day header — always visible */}
+              <TouchableOpacity
+                style={[
+                  styles.dayHeader,
+                  isExpanded && styles.dayHeaderExpanded,
+                  !hasData && styles.dayHeaderEmpty,
+                ]}
+                onPress={() => toggleDia(dia.key)}
+                activeOpacity={0.7}
               >
-                <TouchableOpacity
-                  style={[
-                    styles.dayRow,
-                    isExpanded && styles.dayRowExpanded,
-                    !hasData && styles.dayRowEmpty,
-                  ]}
-                  onPress={() => setSelectedDia(isExpanded ? null : dia.key)}
-                  activeOpacity={0.7}
-                >
-                  {/* Day name */}
-                  <View style={styles.dayLeft}>
-                    <View style={[styles.dayIndicator, hasData && styles.dayIndicatorActive]} />
-                    <Text style={[styles.dayName, !hasData && styles.dayNameEmpty]}>
-                      {dia.label}
-                    </Text>
-                  </View>
-
-                  {/* Counts */}
-                  <View style={styles.dayRight}>
-                    {hasData ? (
-                      <>
-                        <View style={styles.countPill}>
-                          <Text style={styles.countPillText}>👷 {workCount}</Text>
+                <View style={styles.dayLeft}>
+                  <View style={[styles.dayBar, hasData && styles.dayBarActive]} />
+                  <Text style={[styles.dayName, !hasData && styles.dayNameEmpty]}>
+                    {dia.label}
+                  </Text>
+                </View>
+                <View style={styles.dayRight}>
+                  {hasData ? (
+                    <>
+                      <View style={styles.workPill}>
+                        <Text style={styles.workPillText}>👷 {workCount}</Text>
+                      </View>
+                      {restCount > 0 && (
+                        <View style={styles.restPill}>
+                          <Text style={styles.restPillText}>😴 {restCount}</Text>
                         </View>
-                        {restCount > 0 && (
-                          <View style={styles.restPill}>
-                            <Text style={styles.restPillText}>😴 {restCount}</Text>
-                          </View>
-                        )}
-                      </>
-                    ) : (
-                      <Text style={styles.dayEmptyText}>Sin asignar</Text>
-                    )}
-                    <Text style={styles.chevron}>{isExpanded ? '▲' : '▼'}</Text>
-                  </View>
-                </TouchableOpacity>
+                      )}
+                    </>
+                  ) : (
+                    <Text style={styles.emptyText}>Sin asignar</Text>
+                  )}
+                  <Text style={styles.chevron}>{isExpanded ? '▲' : '▼'}</Text>
+                </View>
+              </TouchableOpacity>
 
-                {/* Expanded detail */}
-                {isExpanded && hasData && renderDayDetail(dia.key)}
-              </Animated.View>
-            );
-          })}
+              {/* Expanded content */}
+              {isExpanded && hasData && (
+                <Animated.View entering={FadeIn.duration(150)} style={styles.dayBody}>
+                  {puestos.map((puesto) => {
+                    const assigned = diaData[puesto] || [];
+                    if (assigned.length === 0) return null;
+                    return (
+                      <View key={puesto} style={styles.puestoBlock}>
+                        <Text style={styles.puestoName}>{puesto}</Text>
+                        <View style={styles.chipsRow}>
+                          {assigned.map((p) => (
+                            <View key={p} style={styles.personChip}>
+                              <View style={styles.personDot} />
+                              <Text style={styles.personChipText}>{p}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      </View>
+                    );
+                  })}
+
+                  {resters.length > 0 && (
+                    <View style={styles.restBlock}>
+                      <Text style={styles.restLabel}>😴 Descansan</Text>
+                      <View style={styles.chipsRow}>
+                        {resters.map((p) => (
+                          <View key={p} style={styles.restChip}>
+                            <Text style={styles.restChipText}>{p}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  )}
+                </Animated.View>
+              )}
+            </Animated.View>
+          );
+        })}
+
+        {/* Share buttons inside scroll */}
+        <View style={styles.shareSection}>
+          <TouchableOpacity style={styles.whatsappBtn} onPress={handleShareWhatsApp} activeOpacity={0.8}>
+            <Text style={styles.whatsappBtnText}>📲 Enviar por WhatsApp</Text>
+          </TouchableOpacity>
+          {Platform.OS === 'web' && (
+            <TouchableOpacity style={styles.copyBtn} onPress={handleCopyText} activeOpacity={0.8}>
+              <Text style={styles.copyBtnText}>📋 Copiar texto</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
-
-      {/* Share buttons — bottom, subtle */}
-      <View style={styles.shareBar}>
-        <TouchableOpacity style={styles.whatsappBtn} onPress={handleShareWhatsApp} activeOpacity={0.8}>
-          <Text style={styles.whatsappBtnText}>📲 Enviar por WhatsApp</Text>
-        </TouchableOpacity>
-        {Platform.OS === 'web' && (
-          <TouchableOpacity style={styles.copyBtn} onPress={handleCopyText} activeOpacity={0.8}>
-            <Text style={styles.copyBtnText}>📋</Text>
-          </TouchableOpacity>
-        )}
-      </View>
     </Animated.View>
   );
 };

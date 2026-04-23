@@ -48,45 +48,36 @@ export const resumenStyles = StyleSheet.create({
     flex: 1,
   },
 
-  // ==================== WEEK GRID ====================
-  weekGrid: {
-    gap: 6,
-    paddingBottom: 8,
-  },
-  weekGridWide: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  weekItemWide: {
-    width: '48.5%',
+  // ==================== DAY BLOCK ====================
+  dayBlock: {
+    marginBottom: 6,
   },
 
-  // ==================== DAY ROW (accordion) ====================
-  dayRow: {
+  // Day header (accordion trigger)
+  dayHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: COLORS.card,
     borderRadius: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
+    paddingVertical: 11,
+    paddingHorizontal: 12,
     borderWidth: 1,
     borderColor: COLORS.border,
     ...Platform.select({
-      web: { boxShadow: '0 1px 3px rgba(15,23,42,0.04)' },
+      web: { boxShadow: '0 1px 2px rgba(15,23,42,0.04)' },
       default: { elevation: 1 },
     }),
   },
-  dayRowExpanded: {
+  dayHeaderExpanded: {
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
-    borderBottomWidth: 0,
+    borderBottomColor: 'transparent',
     backgroundColor: COLORS.primaryBg,
     borderColor: COLORS.primaryLight,
   },
-  dayRowEmpty: {
-    opacity: 0.55,
+  dayHeaderEmpty: {
+    opacity: 0.5,
   },
 
   dayLeft: {
@@ -94,13 +85,13 @@ export const resumenStyles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
   },
-  dayIndicator: {
-    width: 4,
-    height: 28,
+  dayBar: {
+    width: 3,
+    height: 24,
     borderRadius: 2,
     backgroundColor: COLORS.border,
   },
-  dayIndicatorActive: {
+  dayBarActive: {
     backgroundColor: COLORS.primary,
   },
   dayName: {
@@ -116,129 +107,121 @@ export const resumenStyles = StyleSheet.create({
   dayRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 5,
   },
-  countPill: {
+  workPill: {
     backgroundColor: COLORS.primaryBg,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 12,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 10,
   },
-  countPillText: {
-    fontSize: 12,
+  workPillText: {
+    fontSize: 11,
     fontWeight: '600',
     color: COLORS.primary,
   },
   restPill: {
     backgroundColor: '#FEF3C7',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 12,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 10,
   },
   restPillText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     color: '#92400E',
   },
-  dayEmptyText: {
+  emptyText: {
     fontSize: 12,
     color: COLORS.textMuted,
     fontStyle: 'italic',
   },
   chevron: {
-    fontSize: 10,
+    fontSize: 9,
     color: COLORS.textMuted,
-    marginLeft: 4,
+    marginLeft: 2,
   },
 
-  // ==================== DETAIL (expanded) ====================
-  detail: {
+  // ==================== DAY BODY (expanded) ====================
+  dayBody: {
     backgroundColor: COLORS.card,
     borderWidth: 1,
     borderTopWidth: 0,
     borderColor: COLORS.primaryLight,
     borderBottomLeftRadius: 10,
     borderBottomRightRadius: 10,
-    padding: 14,
-    marginBottom: 2,
-  },
-  detailTitle: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: COLORS.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginBottom: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
 
-  // Puesto inside detail
-  detailPuesto: {
-    marginBottom: 10,
+  puestoBlock: {
+    marginBottom: 8,
   },
-  detailPuestoName: {
+  puestoName: {
     fontSize: 13,
     fontWeight: '700',
     color: COLORS.text,
-    marginBottom: 5,
+    marginBottom: 4,
   },
-  detailChipsRow: {
+  chipsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 5,
+    gap: 4,
   },
-  detailChip: {
+  personChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 4,
     backgroundColor: COLORS.bg,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 14,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  detailChipDot: {
-    width: 6,
-    height: 6,
+  personDot: {
+    width: 5,
+    height: 5,
     borderRadius: 3,
     backgroundColor: COLORS.primary,
   },
-  detailChipText: {
+  personChipText: {
     fontSize: 12,
     fontWeight: '600',
     color: COLORS.text,
   },
 
-  // Rest inside detail
-  detailRest: {
-    marginTop: 8,
-    paddingTop: 8,
+  // Rest section
+  restBlock: {
+    marginTop: 6,
+    paddingTop: 6,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
   },
-  detailRestLabel: {
+  restLabel: {
     fontSize: 12,
     fontWeight: '600',
     color: '#92400E',
-    marginBottom: 5,
+    marginBottom: 4,
   },
-  detailRestChip: {
+  restChip: {
     backgroundColor: '#FEF3C7',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 14,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
   },
-  detailRestChipText: {
+  restChipText: {
     fontSize: 12,
     fontWeight: '600',
     color: '#92400E',
   },
 
-  // ==================== SHARE BAR ====================
-  shareBar: {
+  // ==================== SHARE ====================
+  shareSection: {
     flexDirection: 'row',
     gap: 8,
-    paddingTop: 10,
+    marginTop: 10,
+    marginBottom: 8,
   },
   whatsappBtn: {
     flex: 1,
@@ -252,12 +235,12 @@ export const resumenStyles = StyleSheet.create({
     }),
   },
   whatsappBtnText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
     color: '#fff',
   },
   copyBtn: {
-    width: 44,
+    flex: 1,
     paddingVertical: 10,
     borderRadius: 10,
     backgroundColor: COLORS.card,
@@ -267,6 +250,8 @@ export const resumenStyles = StyleSheet.create({
     justifyContent: 'center',
   },
   copyBtnText: {
-    fontSize: 16,
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
   },
 });

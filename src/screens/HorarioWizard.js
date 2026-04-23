@@ -156,7 +156,6 @@ export const HorarioWizard = ({ empresa, horario, onBack }) => {
             asignaciones={asignaciones}
             horarioName={horario.name}
             empresaName={empresa.name}
-            isWide={isWide}
           />
         );
       default:
