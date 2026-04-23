@@ -1,40 +1,43 @@
 import { useState, useEffect } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
 const STEP_KEY = '@wizard_step';
 
+const storage = {
+  get: (key) => {
+    if (Platform.OS === 'web') {
+      try { return window.localStorage.getItem(key); } catch { return null; }
+    }
+    return null;
+  },
+  set: (key, value) => {
+    if (Platform.OS === 'web') {
+      try { window.localStorage.setItem(key, value); } catch { /* ignore */ }
+    }
+  },
+};
+
+const getInitialStep = (storageKey, totalSteps) => {
+  if (!storageKey) return 0;
+  const saved = storage.get(storageKey);
+  if (saved !== null) {
+    const parsed = parseInt(saved, 10);
+    if (!isNaN(parsed) && parsed >= 0 && parsed < totalSteps) return parsed;
+  }
+  return 0;
+};
+
 export const useStepper = (totalSteps, persistKey) => {
-  const [step, setStep] = useState(0);
-  const [prevStep, setPrevStep] = useState(0);
-  const [loaded, setLoaded] = useState(false);
-
   const storageKey = persistKey ? `${STEP_KEY}_${persistKey}` : null;
-
-  // Restore step on mount
-  useEffect(() => {
-    if (!storageKey) { setLoaded(true); return; }
-    (async () => {
-      try {
-        const saved = await AsyncStorage.getItem(storageKey);
-        if (saved !== null) {
-          const parsed = parseInt(saved, 10);
-          if (!isNaN(parsed) && parsed >= 0 && parsed < totalSteps) {
-            setStep(parsed);
-          }
-        }
-      } catch (e) {
-        // ignore
-      } finally {
-        setLoaded(true);
-      }
-    })();
-  }, [storageKey, totalSteps]);
+  const [step, setStep] = useState(() => getInitialStep(storageKey, totalSteps));
+  const [prevStep, setPrevStep] = useState(0);
 
   // Persist step on change
   useEffect(() => {
-    if (!loaded || !storageKey) return;
-    AsyncStorage.setItem(storageKey, String(step)).catch(() => { });
-  }, [step, loaded, storageKey]);
+    if (storageKey) {
+      storage.set(storageKey, String(step));
+    }
+  }, [step, storageKey]);
 
   const goToStep = (newStep) => {
     setPrevStep(step);
@@ -49,5 +52,5 @@ export const useStepper = (totalSteps, persistKey) => {
     if (step > 0) goToStep(step - 1);
   };
 
-  return { step, prevStep, goToStep, goNext, goBack, loaded };
+  return { step, prevStep, goToStep, goNext, goBack };
 };

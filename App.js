@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import { View, Text, useWindowDimensions } from 'react-native';
+import { View, useWindowDimensions } from 'react-native';
 
 import { usePersistedNav } from './src/hooks';
 import { EmpresasScreen } from './src/screens/EmpresasScreen';
@@ -14,20 +14,11 @@ export default function App() {
   const {
     selectedEmpresa,
     selectedHorario,
-    restored,
     selectEmpresa,
     selectHorario,
     goBackToHorarios,
     goBackToEmpresas,
   } = usePersistedNav();
-
-  if (!restored) {
-    return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <Text style={{ color: '#94A3B8', fontSize: 14 }}>Cargando...</Text>
-      </View>
-    );
-  }
 
   const renderScreen = () => {
     if (selectedEmpresa && selectedHorario) {

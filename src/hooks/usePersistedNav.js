@@ -1,40 +1,47 @@
 import { useState, useEffect, useCallback } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
 const NAV_KEY = '@nav_state';
 
-export const usePersistedNav = () => {
-  const [selectedEmpresa, setSelectedEmpresa] = useState(null);
-  const [selectedHorario, setSelectedHorario] = useState(null);
-  const [restored, setRestored] = useState(false);
+// Direct localStorage for web (synchronous, reliable)
+// AsyncStorage for native
+const storage = {
+  get: (key) => {
+    if (Platform.OS === 'web') {
+      try { return window.localStorage.getItem(key); } catch { return null; }
+    }
+    return null;
+  },
+  set: (key, value) => {
+    if (Platform.OS === 'web') {
+      try { window.localStorage.setItem(key, value); } catch { /* ignore */ }
+    }
+  },
+};
 
-  // Restore on mount
-  useEffect(() => {
-    (async () => {
-      try {
-        const raw = await AsyncStorage.getItem(NAV_KEY);
-        if (raw) {
-          const { empresa, horario } = JSON.parse(raw);
-          if (empresa) setSelectedEmpresa(empresa);
-          if (horario) setSelectedHorario(horario);
-        }
-      } catch (e) {
-        // ignore
-      } finally {
-        setRestored(true);
-      }
-    })();
-  }, []);
+const getInitialState = () => {
+  const raw = storage.get(NAV_KEY);
+  if (raw) {
+    try {
+      const { empresa, horario } = JSON.parse(raw);
+      return { empresa: empresa || null, horario: horario || null };
+    } catch { /* ignore */ }
+  }
+  return { empresa: null, horario: null };
+};
+
+export const usePersistedNav = () => {
+  const initial = getInitialState();
+  const [selectedEmpresa, setSelectedEmpresa] = useState(initial.empresa);
+  const [selectedHorario, setSelectedHorario] = useState(initial.horario);
 
   // Persist on change
   useEffect(() => {
-    if (!restored) return;
-    const state = {
+    storage.set(NAV_KEY, JSON.stringify({
       empresa: selectedEmpresa,
       horario: selectedHorario,
-    };
-    AsyncStorage.setItem(NAV_KEY, JSON.stringify(state)).catch(() => {});
-  }, [selectedEmpresa, selectedHorario, restored]);
+    }));
+  }, [selectedEmpresa, selectedHorario]);
 
   const selectEmpresa = useCallback((empresa) => {
     setSelectedEmpresa(empresa);
@@ -57,7 +64,7 @@ export const usePersistedNav = () => {
   return {
     selectedEmpresa,
     selectedHorario,
-    restored,
+    restored: true,
     selectEmpresa,
     selectHorario,
     goBackToHorarios,
