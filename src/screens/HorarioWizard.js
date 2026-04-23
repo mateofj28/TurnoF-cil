@@ -18,7 +18,7 @@ export const HorarioWizard = ({ empresa, horario, onBack }) => {
   const { width } = useWindowDimensions();
   const isWide = width > 768;
 
-  const { step, prevStep, goToStep } = useStepper(STEPS.length);
+  const { step, prevStep, goToStep } = useStepper(STEPS.length, `${empresa.id}_${horario.id}`);
   const {
     puestos,
     personas,

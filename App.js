@@ -1,7 +1,7 @@
 import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
-import { View, useWindowDimensions } from 'react-native';
+import { View, Text, useWindowDimensions } from 'react-native';
 
+import { usePersistedNav } from './src/hooks';
 import { EmpresasScreen } from './src/screens/EmpresasScreen';
 import { HorariosScreen } from './src/screens/HorariosScreen';
 import { HorarioWizard } from './src/screens/HorarioWizard';
@@ -11,8 +11,23 @@ export default function App() {
   const { width } = useWindowDimensions();
   const isWide = width > 768;
 
-  const [selectedEmpresa, setSelectedEmpresa] = useState(null);
-  const [selectedHorario, setSelectedHorario] = useState(null);
+  const {
+    selectedEmpresa,
+    selectedHorario,
+    restored,
+    selectEmpresa,
+    selectHorario,
+    goBackToHorarios,
+    goBackToEmpresas,
+  } = usePersistedNav();
+
+  if (!restored) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={{ color: '#94A3B8', fontSize: 14 }}>Cargando...</Text>
+      </View>
+    );
+  }
 
   const renderScreen = () => {
     if (selectedEmpresa && selectedHorario) {
@@ -20,7 +35,7 @@ export default function App() {
         <HorarioWizard
           empresa={selectedEmpresa}
           horario={selectedHorario}
-          onBack={() => setSelectedHorario(null)}
+          onBack={goBackToHorarios}
         />
       );
     }
@@ -29,13 +44,13 @@ export default function App() {
       return (
         <HorariosScreen
           empresa={selectedEmpresa}
-          onSelectHorario={setSelectedHorario}
-          onBack={() => setSelectedEmpresa(null)}
+          onSelectHorario={selectHorario}
+          onBack={goBackToEmpresas}
         />
       );
     }
 
-    return <EmpresasScreen onSelectEmpresa={setSelectedEmpresa} />;
+    return <EmpresasScreen onSelectEmpresa={selectEmpresa} />;
   };
 
   return (
