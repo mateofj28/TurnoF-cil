@@ -29,14 +29,20 @@ export const HorarioWizard = ({ empresa, horario, onBack }) => {
   } = useStorage(empresa.id, horario.id);
   const {
     asignaciones,
+    selectedDia,
+    setSelectedDia,
     selectedPuesto,
     setSelectedPuesto,
+    getDiaAsignaciones,
     getPersonaCount,
+    getDiaCount,
     asignarAleatorio,
+    asignarAleatorioSemana,
     toggleAsignacion,
     resetAsignaciones,
     removeAsignacionesPuesto,
     removePersonaDeAsignaciones,
+    hasAnyAsignacion,
   } = useAsignaciones(empresa.id, horario.id, puestos, personas);
 
   const [inputValue, setInputValue] = useState('');
@@ -80,7 +86,7 @@ export const HorarioWizard = ({ empresa, horario, onBack }) => {
   const canGoNext = () => {
     if (step === 0) return puestos.length > 0;
     if (step === 1) return personas.length > 0;
-    if (step === 2) return Object.values(asignaciones).some((a) => a.length > 0);
+    if (step === 2) return hasAnyAsignacion();
     return false;
   };
 
@@ -126,13 +132,17 @@ export const HorarioWizard = ({ empresa, horario, onBack }) => {
             enteringAnimation={slideEnter}
             puestos={puestos}
             personas={personas}
-            asignaciones={asignaciones}
+            selectedDia={selectedDia}
+            onSelectDia={setSelectedDia}
+            getDiaAsignaciones={getDiaAsignaciones}
+            getDiaCount={getDiaCount}
             selectedPuesto={selectedPuesto}
             isWide={isWide}
             getPersonaCount={getPersonaCount}
             onSelectPuesto={setSelectedPuesto}
             onToggle={toggleAsignacion}
             onAsignarAleatorio={asignarAleatorio}
+            onAsignarAleatorioSemana={asignarAleatorioSemana}
           />
         );
       case 3:

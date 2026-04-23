@@ -31,7 +31,6 @@ export const addEmpresaDoc = async (name) => {
 };
 
 export const removeEmpresaDoc = async (empresaId) => {
-  // Delete empresa doc (subcollections persist in Firestore but won't be queried)
   await deleteDoc(doc(db, 'empresas', empresaId));
 };
 
@@ -60,7 +59,7 @@ export const removeHorarioDoc = async (empresaId, horarioId) => {
   await deleteDoc(doc(db, 'empresas', empresaId, 'horarios', horarioId));
 };
 
-// ==================== PUESTOS (dentro de horario) ====================
+// ==================== PUESTOS ====================
 
 const puestosCol = (empresaId, horarioId) =>
   collection(db, 'empresas', empresaId, 'horarios', horarioId, 'puestos');
@@ -83,13 +82,9 @@ export const removePuestoDoc = async (empresaId, horarioId, name) => {
   await deleteDoc(
     doc(db, 'empresas', empresaId, 'horarios', horarioId, 'puestos', name)
   );
-  // Also remove its assignments
-  await deleteDoc(
-    doc(db, 'empresas', empresaId, 'horarios', horarioId, 'asignaciones', name)
-  );
 };
 
-// ==================== PERSONAS (dentro de horario) ====================
+// ==================== PERSONAS ====================
 
 const personasCol = (empresaId, horarioId) =>
   collection(db, 'empresas', empresaId, 'horarios', horarioId, 'personas');
@@ -114,30 +109,28 @@ export const removePersonaDoc = async (empresaId, horarioId, name) => {
   );
 };
 
-// ==================== ASIGNACIONES (dentro de horario) ====================
+// ==================== ASIGNACIONES POR DÍA ====================
+// Structure: asignaciones/{dia} → { puestos: { "Caja": ["Juan"], "Bodega": ["María"] } }
 
 const asignacionesCol = (empresaId, horarioId) =>
   collection(db, 'empresas', empresaId, 'horarios', horarioId, 'asignaciones');
 
 export const subscribeAsignaciones = (empresaId, horarioId, callback) => {
   return onSnapshot(asignacionesCol(empresaId, horarioId), (snapshot) => {
+    // result = { lunes: { Caja: ["Juan"], Bodega: ["María"] }, martes: {...}, ... }
     const result = {};
     snapshot.docs.forEach((d) => {
-      result[d.id] = d.data().personas || [];
+      result[d.id] = d.data().puestos || {};
     });
     callback(result);
   });
 };
 
-export const saveAsignaciones = async (empresaId, horarioId, asignaciones) => {
-  const batch = writeBatch(db);
-  for (const [puesto, personas] of Object.entries(asignaciones)) {
-    batch.set(
-      doc(db, 'empresas', empresaId, 'horarios', horarioId, 'asignaciones', puesto),
-      { personas }
-    );
-  }
-  await batch.commit();
+export const saveDiaAsignaciones = async (empresaId, horarioId, dia, puestosMap) => {
+  await setDoc(
+    doc(db, 'empresas', empresaId, 'horarios', horarioId, 'asignaciones', dia),
+    { puestos: puestosMap }
+  );
 };
 
 export const clearAsignaciones = async (empresaId, horarioId) => {

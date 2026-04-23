@@ -13,6 +13,6 @@ export {
   addPersonaDoc,
   removePersonaDoc,
   subscribeAsignaciones,
-  saveAsignaciones,
+  saveDiaAsignaciones,
   clearAsignaciones,
 } from './firestore';

@@ -10,16 +10,80 @@ import Animated, {
   FadeInDown,
   LinearTransition,
 } from 'react-native-reanimated';
-import { COLORS, MAX_ASIGNACIONES_POR_PERSONA } from '../constants';
+import { COLORS, DIAS, MAX_ASIGNACIONES_POR_PERSONA } from '../constants';
 import { asignacionStyles as styles } from '../styles/asignacion.styles';
 
-const PuestosList = ({ puestos, selectedPuesto, asignaciones, onSelect, isWide }) => (
-  <ScrollView showsVerticalScrollIndicator={false} style={isWide ? styles.puestosCol : undefined}>
+const DaySelector = ({ selectedDia, onSelectDia, getDiaCount }) => (
+  <ScrollView
+    horizontal
+    showsHorizontalScrollIndicator={false}
+    style={styles.dayScroll}
+    contentContainerStyle={styles.dayScrollContent}
+  >
+    {DIAS.map((dia) => {
+      const isActive = selectedDia === dia.key;
+      const count = getDiaCount(dia.key);
+      return (
+        <TouchableOpacity
+          key={dia.key}
+          style={[styles.dayChip, isActive && styles.dayChipActive]}
+          onPress={() => onSelectDia(dia.key)}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.dayChipText, isActive && styles.dayChipTextActive]}>
+            {dia.short}
+          </Text>
+          {count > 0 && (
+            <View style={[styles.dayBadge, isActive && styles.dayBadgeActive]}>
+              <Text style={[styles.dayBadgeText, isActive && styles.dayBadgeTextActive]}>
+                {count}
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      );
+    })}
+  </ScrollView>
+);
+
+const PuestosTabs = ({ puestos, selectedPuesto, diaAsignaciones, onSelect }) => (
+  <ScrollView
+    horizontal
+    showsHorizontalScrollIndicator={false}
+    style={styles.tabsScroll}
+    contentContainerStyle={styles.tabsContent}
+  >
+    {puestos.map((p) => {
+      const isActive = selectedPuesto === p;
+      const count = (diaAsignaciones[p] || []).length;
+      return (
+        <TouchableOpacity
+          key={p}
+          style={[styles.tab, isActive && styles.tabActive]}
+          onPress={() => onSelect(p)}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.tabText, isActive && styles.tabTextActive]}>{p}</Text>
+          {count > 0 && (
+            <View style={[styles.badge, isActive && styles.badgeActive]}>
+              <Text style={[styles.badgeText, isActive && styles.badgeTextActive]}>
+                {count}
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      );
+    })}
+  </ScrollView>
+);
+
+const PuestosListWide = ({ puestos, selectedPuesto, diaAsignaciones, onSelect }) => (
+  <ScrollView showsVerticalScrollIndicator={false} style={styles.puestosCol}>
     {puestos.map((p, i) => {
       const isActive = selectedPuesto === p;
-      const count = (asignaciones[p] || []).length;
+      const count = (diaAsignaciones[p] || []).length;
       return (
-        <Animated.View key={p} entering={FadeInDown.delay(i * 60).duration(300)}>
+        <Animated.View key={p} entering={FadeInDown.delay(i * 40).duration(250)}>
           <TouchableOpacity
             style={[styles.puestoItem, isActive && styles.puestoItemActive]}
             onPress={() => onSelect(p)}
@@ -48,7 +112,7 @@ const PuestosList = ({ puestos, selectedPuesto, asignaciones, onSelect, isWide }
 const PersonasList = ({
   personas,
   selectedPuesto,
-  asignaciones,
+  diaAsignaciones,
   getPersonaCount,
   onToggle,
 }) => {
@@ -68,12 +132,12 @@ const PersonasList = ({
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.listContent}
       renderItem={({ item, index }) => {
-        const isAssigned = (asignaciones[selectedPuesto] || []).includes(item);
+        const isAssigned = (diaAsignaciones[selectedPuesto] || []).includes(item);
         const totalCount = getPersonaCount(item);
         const isMaxed = totalCount >= MAX_ASIGNACIONES_POR_PERSONA && !isAssigned;
         return (
           <Animated.View
-            entering={FadeInDown.delay(index * 40).duration(250)}
+            entering={FadeInDown.delay(index * 30).duration(200)}
             layout={LinearTransition.springify()}
           >
             <TouchableOpacity
@@ -95,20 +159,15 @@ const PersonasList = ({
                 >
                   {isAssigned && <Text style={styles.checkmark}>✓</Text>}
                 </View>
-                <View>
-                  <Text
-                    style={[
-                      styles.assignText,
-                      isAssigned && styles.assignTextActive,
-                      isMaxed && styles.assignTextDisabled,
-                    ]}
-                  >
-                    {item}
-                  </Text>
-                  {totalCount > 0 && (
-                    <Text style={styles.assignCountHint}>Ya asignado a otro puesto</Text>
-                  )}
-                </View>
+                <Text
+                  style={[
+                    styles.assignText,
+                    isAssigned && styles.assignTextActive,
+                    isMaxed && styles.assignTextDisabled,
+                  ]}
+                >
+                  {item}
+                </Text>
               </View>
               {isAssigned && (
                 <Animated.View entering={FadeIn.duration(200)}>
@@ -134,85 +193,86 @@ export const AsignacionScreen = ({
   enteringAnimation,
   puestos,
   personas,
-  asignaciones,
+  selectedDia,
+  onSelectDia,
+  getDiaAsignaciones,
+  getDiaCount,
   selectedPuesto,
   isWide,
   getPersonaCount,
   onSelectPuesto,
   onToggle,
   onAsignarAleatorio,
-}) => (
-  <Animated.View entering={enteringAnimation} key="step-2" style={styles.stepContent}>
-    <View style={styles.assignHeader}>
-      <Text style={styles.sectionHint}>
-        Selecciona un puesto y marca las personas asignadas
-      </Text>
-      <TouchableOpacity style={styles.randomBtn} onPress={onAsignarAleatorio} activeOpacity={0.8}>
-        <Text style={styles.randomBtnText}>🎲 Aleatorio</Text>
-      </TouchableOpacity>
-    </View>
-    {isWide ? (
-      <View style={styles.assignRow}>
-        <View style={styles.assignColLeft}>
-          <Text style={styles.colTitle}>Puestos</Text>
-          <PuestosList
-            puestos={puestos}
-            selectedPuesto={selectedPuesto}
-            asignaciones={asignaciones}
-            onSelect={onSelectPuesto}
-            isWide={isWide}
-          />
+  onAsignarAleatorioSemana,
+}) => {
+  const diaAsignaciones = getDiaAsignaciones();
+  const diaLabel = DIAS.find((d) => d.key === selectedDia)?.label || '';
+
+  return (
+    <Animated.View entering={enteringAnimation} key="step-2" style={styles.stepContent}>
+      {/* Day selector */}
+      <DaySelector
+        selectedDia={selectedDia}
+        onSelectDia={onSelectDia}
+        getDiaCount={getDiaCount}
+      />
+
+      {/* Action buttons */}
+      <View style={styles.assignHeader}>
+        <Text style={styles.sectionHint} numberOfLines={1}>
+          {diaLabel} · Asigna personas a puestos
+        </Text>
+        <TouchableOpacity style={styles.randomBtn} onPress={onAsignarAleatorio} activeOpacity={0.8}>
+          <Text style={styles.randomBtnText}>🎲 Día</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.randomWeekBtn} onPress={onAsignarAleatorioSemana} activeOpacity={0.8}>
+          <Text style={styles.randomBtnText}>🎲 Semana</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Puestos + Personas */}
+      {isWide ? (
+        <View style={styles.assignRow}>
+          <View style={styles.assignColLeft}>
+            <Text style={styles.colTitle}>Puestos</Text>
+            <PuestosListWide
+              puestos={puestos}
+              selectedPuesto={selectedPuesto}
+              diaAsignaciones={diaAsignaciones}
+              onSelect={onSelectPuesto}
+            />
+          </View>
+          <View style={styles.assignDivider} />
+          <View style={styles.assignColRight}>
+            <Text style={styles.colTitle}>
+              {selectedPuesto ? `Personas → ${selectedPuesto}` : 'Personas'}
+            </Text>
+            <PersonasList
+              personas={personas}
+              selectedPuesto={selectedPuesto}
+              diaAsignaciones={diaAsignaciones}
+              getPersonaCount={getPersonaCount}
+              onToggle={onToggle}
+            />
+          </View>
         </View>
-        <View style={styles.assignDivider} />
-        <View style={styles.assignColRight}>
-          <Text style={styles.colTitle}>
-            {selectedPuesto ? `Personas → ${selectedPuesto}` : 'Personas'}
-          </Text>
-          <PersonasList
-            personas={personas}
-            selectedPuesto={selectedPuesto}
-            asignaciones={asignaciones}
+      ) : (
+        <>
+            <PuestosTabs
+              puestos={puestos}
+              selectedPuesto={selectedPuesto}
+              diaAsignaciones={diaAsignaciones}
+              onSelect={onSelectPuesto}
+            />
+            <PersonasList
+              personas={personas}
+              selectedPuesto={selectedPuesto}
+            diaAsignaciones={diaAsignaciones}
             getPersonaCount={getPersonaCount}
             onToggle={onToggle}
           />
-        </View>
-      </View>
-    ) : (
-      <>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsScroll}>
-          <View style={styles.tabsRow}>
-            {puestos.map((p, i) => {
-              const isActive = selectedPuesto === p;
-              const count = (asignaciones[p] || []).length;
-              return (
-                <Animated.View key={p} entering={FadeInDown.delay(i * 60).duration(300)}>
-                  <TouchableOpacity
-                    style={[styles.tab, isActive && styles.tabActive]}
-                    onPress={() => onSelectPuesto(p)}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={[styles.tabText, isActive && styles.tabTextActive]}>{p}</Text>
-                    {count > 0 && (
-                      <View style={[styles.badge, isActive && styles.badgeActive]}>
-                        <Text style={[styles.badgeText, isActive && styles.badgeTextActive]}>
-                          {count}
-                        </Text>
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                </Animated.View>
-              );
-            })}
-          </View>
-        </ScrollView>
-        <PersonasList
-          personas={personas}
-          selectedPuesto={selectedPuesto}
-          asignaciones={asignaciones}
-          getPersonaCount={getPersonaCount}
-          onToggle={onToggle}
-        />
-      </>
-    )}
-  </Animated.View>
-);
+        </>
+      )}
+    </Animated.View>
+  );
+};
