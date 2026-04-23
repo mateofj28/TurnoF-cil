@@ -2,318 +2,271 @@ import { StyleSheet, Platform } from 'react-native';
 import { COLORS } from '../constants';
 
 export const resumenStyles = StyleSheet.create({
-  stepContent: {
+  container: {
     flex: 1,
   },
 
-  // Stats
-  topRow: {
-    marginBottom: 10,
+  // ==================== STATS ====================
+  statsRow: {
+    flexDirection: 'row',
     gap: 8,
+    marginBottom: 14,
   },
-  statsBar: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+  statCard: {
+    flex: 1,
     backgroundColor: COLORS.card,
-    borderRadius: 8,
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  shareRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  whatsappBtn: {
-    flex: 1,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: '#25D366',
-    alignItems: 'center',
-    ...Platform.select({
-      web: { boxShadow: '0 2px 8px rgba(37,211,102,0.3)' },
-      default: { elevation: 2 },
-    }),
-  },
-  whatsappBtnText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  copyBtn: {
-    flex: 1,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: COLORS.card,
-    borderWidth: 1.5,
-    borderColor: COLORS.border,
-    alignItems: 'center',
-  },
-  copyBtnText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-  },
-  statInline: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-  },
-  statNum: {
-    fontWeight: '800',
-    fontSize: 14,
-    color: COLORS.primary,
-  },
-
-  // View mode toggle
-  modeRow: {
-    flexDirection: 'row',
-    gap: 6,
-    marginBottom: 10,
-  },
-  modeBtn: {
-    flex: 1,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: COLORS.bg,
-    borderWidth: 1.5,
-    borderColor: COLORS.border,
-    alignItems: 'center',
-  },
-  modeBtnActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
-  modeBtnText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-  },
-  modeBtnTextActive: {
-    color: '#fff',
-  },
-
-  // Day tabs (for single day view)
-  dayTabsScroll: {
-    flexGrow: 0,
-    marginBottom: 10,
-  },
-  dayTabsContent: {
-    gap: 6,
-  },
-  dayTab: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 18,
-    backgroundColor: COLORS.card,
-    borderWidth: 1.5,
-    borderColor: COLORS.border,
-  },
-  dayTabActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
-  dayTabText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-  },
-  dayTabTextActive: {
-    color: '#fff',
-  },
-  dayTabBadge: {
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
+  statCardAccent: {
     backgroundColor: COLORS.primaryBg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 4,
+    borderColor: COLORS.primaryLight,
   },
-  dayTabBadgeActive: {
-    backgroundColor: 'rgba(255,255,255,0.25)',
+  statValue: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: COLORS.text,
   },
-  dayTabBadgeText: {
-    fontSize: 10,
-    fontWeight: '700',
+  statValueAccent: {
     color: COLORS.primary,
   },
-  dayTabBadgeTextActive: {
-    color: '#fff',
+  statLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: COLORS.textMuted,
+    marginTop: 1,
+  },
+  statLabelAccent: {
+    color: COLORS.primary,
   },
 
-  // Scroll area
+  // ==================== SCROLL ====================
   scrollArea: {
     flex: 1,
   },
 
-  // Weekly grid
+  // ==================== WEEK GRID ====================
   weekGrid: {
-    gap: 8,
-    paddingBottom: 16,
+    gap: 6,
+    paddingBottom: 8,
   },
   weekGridWide: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    gap: 8,
   },
-  dayCard: {
+  weekItemWide: {
+    width: '48.5%',
+  },
+
+  // ==================== DAY ROW (accordion) ====================
+  dayRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     backgroundColor: COLORS.card,
     borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     borderWidth: 1,
     borderColor: COLORS.border,
-    overflow: 'hidden',
     ...Platform.select({
-      web: { boxShadow: '0 1px 4px rgba(15,23,42,0.05)' },
+      web: { boxShadow: '0 1px 3px rgba(15,23,42,0.04)' },
       default: { elevation: 1 },
     }),
   },
-  dayCardWide: {
-    width: '48.5%',
-  },
-  dayCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: COLORS.bg,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  dayCardHeaderActive: {
+  dayRowExpanded: {
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    borderBottomWidth: 0,
     backgroundColor: COLORS.primaryBg,
-    borderBottomColor: COLORS.primaryLight,
+    borderColor: COLORS.primaryLight,
   },
-  dayCardTitle: {
-    fontSize: 14,
+  dayRowEmpty: {
+    opacity: 0.55,
+  },
+
+  dayLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  dayIndicator: {
+    width: 4,
+    height: 28,
+    borderRadius: 2,
+    backgroundColor: COLORS.border,
+  },
+  dayIndicatorActive: {
+    backgroundColor: COLORS.primary,
+  },
+  dayName: {
+    fontSize: 15,
     fontWeight: '700',
     color: COLORS.text,
   },
-  dayCardCount: {
-    fontSize: 12,
+  dayNameEmpty: {
+    color: COLORS.textMuted,
     fontWeight: '500',
-    color: COLORS.textMuted,
-  },
-  dayCardBody: {
-    padding: 10,
-    minHeight: 36,
-  },
-  noDayData: {
-    fontSize: 12,
-    color: COLORS.textMuted,
-    fontStyle: 'italic',
   },
 
-  // Puesto row (inside day card)
-  puestoRow: {
-    marginBottom: 6,
-  },
-  puestoLabel: {
+  dayRight: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 4,
   },
-  puestoDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: COLORS.textMuted,
-  },
-  puestoDotOk: {
-    backgroundColor: COLORS.success,
-  },
-  puestoName: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.text,
-  },
-  personasRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 4,
-    paddingLeft: 12,
-  },
-  personaChip: {
+  countPill: {
     backgroundColor: COLORS.primaryBg,
     paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
+    paddingVertical: 3,
+    borderRadius: 12,
   },
-  personaChipText: {
-    fontSize: 11,
+  countPillText: {
+    fontSize: 12,
     fontWeight: '600',
     color: COLORS.primary,
   },
-
-  // Single day view
-  singleDayCard: {
-    backgroundColor: COLORS.card,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    overflow: 'hidden',
+  restPill: {
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
   },
-  singleDayHeader: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    backgroundColor: COLORS.primaryBg,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.primaryLight,
+  restPillText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#92400E',
   },
-  singleDayTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.primary,
-  },
-  singleDayBody: {
-    padding: 12,
-    gap: 8,
-  },
-  singlePuestoCard: {
-    backgroundColor: COLORS.bg,
-    borderRadius: 8,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderLeftWidth: 3,
-    borderLeftColor: COLORS.success,
-  },
-  singlePuestoCardEmpty: {
-    borderLeftColor: COLORS.textMuted,
-    opacity: 0.6,
-  },
-  emptyPuesto: {
+  dayEmptyText: {
     fontSize: 12,
     color: COLORS.textMuted,
     fontStyle: 'italic',
-    paddingLeft: 12,
+  },
+  chevron: {
+    fontSize: 10,
+    color: COLORS.textMuted,
+    marginLeft: 4,
   },
 
-  // Rest section
-  restSection: {
-    marginTop: 6,
-    paddingTop: 6,
+  // ==================== DETAIL (expanded) ====================
+  detail: {
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderTopWidth: 0,
+    borderColor: COLORS.primaryLight,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+    padding: 14,
+    marginBottom: 2,
+  },
+  detailTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginBottom: 10,
+  },
+
+  // Puesto inside detail
+  detailPuesto: {
+    marginBottom: 10,
+  },
+  detailPuestoName: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 5,
+  },
+  detailChipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 5,
+  },
+  detailChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: COLORS.bg,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  detailChipDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: COLORS.primary,
+  },
+  detailChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+
+  // Rest inside detail
+  detailRest: {
+    marginTop: 8,
+    paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
   },
-  restLabel: {
+  detailRestLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: COLORS.textMuted,
-    marginBottom: 4,
+    color: '#92400E',
+    marginBottom: 5,
   },
-  restChip: {
+  detailRestChip: {
     backgroundColor: '#FEF3C7',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 14,
   },
-  restChipText: {
-    fontSize: 11,
+  detailRestChipText: {
+    fontSize: 12,
     fontWeight: '600',
     color: '#92400E',
+  },
+
+  // ==================== SHARE BAR ====================
+  shareBar: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingTop: 10,
+  },
+  whatsappBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: '#25D366',
+    alignItems: 'center',
+    ...Platform.select({
+      web: { boxShadow: '0 2px 8px rgba(37,211,102,0.25)' },
+      default: { elevation: 2 },
+    }),
+  },
+  whatsappBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  copyBtn: {
+    width: 44,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: COLORS.card,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  copyBtnText: {
+    fontSize: 16,
   },
 });

@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Linking, Platform } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { COLORS, DIAS } from '../constants';
 import { resumenStyles as styles } from '../styles/resumen.styles';
 
-// Get all personas who work on a given day
 const getWorkers = (diaKey, asignaciones) => {
   const diaData = asignaciones[diaKey] || {};
   const workers = new Set();
@@ -14,13 +13,11 @@ const getWorkers = (diaKey, asignaciones) => {
   return workers;
 };
 
-// Get personas who rest on a given day (not assigned to any puesto)
 const getResters = (diaKey, asignaciones, personas) => {
   const workers = getWorkers(diaKey, asignaciones);
   return personas.filter((p) => !workers.has(p));
 };
 
-// Build WhatsApp-friendly text
 const buildWhatsAppText = (empresaName, horarioName, puestos, personas, asignaciones) => {
   let text = `📋 *${horarioName}*\n🏢 ${empresaName}\n`;
   text += `━━━━━━━━━━━━━━━━\n\n`;
@@ -54,25 +51,6 @@ const buildWhatsAppText = (empresaName, horarioName, puestos, personas, asignaci
   return text;
 };
 
-const DayTab = ({ dia, isActive, count, onPress }) => (
-  <TouchableOpacity
-    style={[styles.dayTab, isActive && styles.dayTabActive]}
-    onPress={onPress}
-    activeOpacity={0.8}
-  >
-    <Text style={[styles.dayTabText, isActive && styles.dayTabTextActive]}>
-      {dia.short}
-    </Text>
-    {count > 0 && (
-      <View style={[styles.dayTabBadge, isActive && styles.dayTabBadgeActive]}>
-        <Text style={[styles.dayTabBadgeText, isActive && styles.dayTabBadgeTextActive]}>
-          {count}
-        </Text>
-      </View>
-    )}
-  </TouchableOpacity>
-);
-
 export const ResumenScreen = ({
   enteringAnimation,
   puestos,
@@ -82,8 +60,7 @@ export const ResumenScreen = ({
   empresaName,
   isWide,
 }) => {
-  const [viewMode, setViewMode] = useState('semana');
-  const [selectedDia, setSelectedDia] = useState(DIAS[0].key);
+  const [selectedDia, setSelectedDia] = useState(null);
 
   const totalPersonas = new Set(
     DIAS.flatMap((dia) => {
@@ -97,16 +74,12 @@ export const ResumenScreen = ({
     return Object.values(diaData).some((arr) => arr.length > 0);
   }).length;
 
-  const getDiaPersonasCount = (diaKey) => {
-    const diaData = asignaciones[diaKey] || {};
-    return new Set(Object.values(diaData).flat()).size;
-  };
+  const getDiaWorkCount = (diaKey) => getWorkers(diaKey, asignaciones).size;
+  const getDiaRestCount = (diaKey) => getResters(diaKey, asignaciones, personas).length;
 
   const handleShareWhatsApp = () => {
     const text = buildWhatsAppText(empresaName, horarioName, puestos, personas, asignaciones);
-    const encoded = encodeURIComponent(text);
-    const url = `https://wa.me/?text=${encoded}`;
-    Linking.openURL(url);
+    Linking.openURL(`https://wa.me/?text=${encodeURIComponent(text)}`);
   };
 
   const handleCopyText = () => {
@@ -116,193 +89,141 @@ export const ResumenScreen = ({
     }
   };
 
-  const renderDescansan = (diaKey) => {
-    const resters = getResters(diaKey, asignaciones, personas);
-    if (resters.length === 0) return null;
-    return (
-      <View style={styles.restSection}>
-        <Text style={styles.restLabel}>😴 Descansan</Text>
-        <View style={styles.personasRow}>
-          {resters.map((p) => (
-            <View key={p} style={styles.restChip}>
-              <Text style={styles.restChipText}>{p}</Text>
-            </View>
-          ))}
-        </View>
-      </View>
-    );
-  };
-
-  const renderDiaContent = (diaKey) => {
+  // Render expanded day detail
+  const renderDayDetail = (diaKey) => {
     const diaData = asignaciones[diaKey] || {};
-    const hasSomething = Object.values(diaData).some((arr) => arr.length > 0);
-
-    if (!hasSomething) {
-      return <Text style={styles.noDayData}>Sin asignaciones</Text>;
-    }
+    const resters = getResters(diaKey, asignaciones, personas);
+    const diaLabel = DIAS.find((d) => d.key === diaKey)?.label || '';
 
     return (
-      <>
+      <Animated.View entering={FadeIn.duration(200)} style={styles.detail}>
+        <Text style={styles.detailTitle}>{diaLabel}</Text>
+
+        {/* Puestos */}
         {puestos.map((puesto) => {
           const assigned = diaData[puesto] || [];
           if (assigned.length === 0) return null;
           return (
-            <View key={puesto} style={styles.puestoRow}>
-              <View style={styles.puestoLabel}>
-                <View style={styles.puestoDot} />
-                <Text style={styles.puestoName} numberOfLines={1}>{puesto}</Text>
-              </View>
-              <View style={styles.personasRow}>
-                {assigned.map((persona) => (
-                  <View key={persona} style={styles.personaChip}>
-                    <Text style={styles.personaChipText} numberOfLines={1}>{persona}</Text>
+            <View key={puesto} style={styles.detailPuesto}>
+              <Text style={styles.detailPuestoName}>{puesto}</Text>
+              <View style={styles.detailChipsRow}>
+                {assigned.map((p) => (
+                  <View key={p} style={styles.detailChip}>
+                    <View style={styles.detailChipDot} />
+                    <Text style={styles.detailChipText}>{p}</Text>
                   </View>
                 ))}
               </View>
             </View>
           );
         })}
-        {renderDescansan(diaKey)}
-      </>
+
+        {/* Descansan */}
+        {resters.length > 0 && (
+          <View style={styles.detailRest}>
+            <Text style={styles.detailRestLabel}>Descansan</Text>
+            <View style={styles.detailChipsRow}>
+              {resters.map((p) => (
+                <View key={p} style={styles.detailRestChip}>
+                  <Text style={styles.detailRestChipText}>{p}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+      </Animated.View>
     );
   };
 
   return (
-    <Animated.View entering={enteringAnimation} key="step-3" style={styles.stepContent}>
-      {/* Stats + share */}
-      <View style={styles.topRow}>
-        <View style={styles.statsBar}>
-          <Text style={styles.statInline}>
-            <Text style={styles.statNum}>{puestos.length}</Text> puestos · {' '}
-            <Text style={styles.statNum}>{totalPersonas}</Text> personas · {' '}
-            <Text style={[styles.statNum, { color: COLORS.success }]}>{diasConAsignacion}</Text>/7 días
-          </Text>
+    <Animated.View entering={enteringAnimation} key="step-3" style={styles.container}>
+      {/* Stats cards */}
+      <View style={styles.statsRow}>
+        <View style={styles.statCard}>
+          <Text style={styles.statValue}>{puestos.length}</Text>
+          <Text style={styles.statLabel}>Puestos</Text>
         </View>
-        <View style={styles.shareRow}>
-          <TouchableOpacity style={styles.whatsappBtn} onPress={handleShareWhatsApp} activeOpacity={0.8}>
-            <Text style={styles.whatsappBtnText}>📲 WhatsApp</Text>
-          </TouchableOpacity>
-          {Platform.OS === 'web' && (
-            <TouchableOpacity style={styles.copyBtn} onPress={handleCopyText} activeOpacity={0.8}>
-              <Text style={styles.copyBtnText}>📋 Copiar</Text>
-            </TouchableOpacity>
-          )}
+        <View style={styles.statCard}>
+          <Text style={styles.statValue}>{totalPersonas}</Text>
+          <Text style={styles.statLabel}>Personas</Text>
+        </View>
+        <View style={[styles.statCard, styles.statCardAccent]}>
+          <Text style={[styles.statValue, styles.statValueAccent]}>{diasConAsignacion}/7</Text>
+          <Text style={[styles.statLabel, styles.statLabelAccent]}>Días</Text>
         </View>
       </View>
 
-      {/* View mode toggle */}
-      <View style={styles.modeRow}>
-        <TouchableOpacity
-          style={[styles.modeBtn, viewMode === 'semana' && styles.modeBtnActive]}
-          onPress={() => setViewMode('semana')}
-          activeOpacity={0.8}
-        >
-          <Text style={[styles.modeBtnText, viewMode === 'semana' && styles.modeBtnTextActive]}>
-            Vista semanal
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.modeBtn, viewMode === 'dia' && styles.modeBtnActive]}
-          onPress={() => setViewMode('dia')}
-          activeOpacity={0.8}
-        >
-          <Text style={[styles.modeBtnText, viewMode === 'dia' && styles.modeBtnTextActive]}>
-            Por día
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {viewMode === 'dia' && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.dayTabsScroll}
-          contentContainerStyle={styles.dayTabsContent}
-        >
-          {DIAS.map((dia) => (
-            <DayTab
-              key={dia.key}
-              dia={dia}
-              isActive={selectedDia === dia.key}
-              count={getDiaPersonasCount(dia.key)}
-              onPress={() => setSelectedDia(dia.key)}
-            />
-          ))}
-        </ScrollView>
-      )}
-
+      {/* Week overview */}
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollArea}>
-        {viewMode === 'semana' ? (
-          <View style={[styles.weekGrid, isWide && styles.weekGridWide]}>
-            {DIAS.map((dia, i) => {
-              const count = getDiaPersonasCount(dia.key);
-              const restCount = getResters(dia.key, asignaciones, personas).length;
-              return (
-                <Animated.View
-                  key={dia.key}
-                  entering={FadeInDown.delay(i * 50).duration(250)}
-                  style={[styles.dayCard, isWide && styles.dayCardWide]}
+        <View style={[styles.weekGrid, isWide && styles.weekGridWide]}>
+          {DIAS.map((dia, i) => {
+            const workCount = getDiaWorkCount(dia.key);
+            const restCount = getDiaRestCount(dia.key);
+            const isExpanded = selectedDia === dia.key;
+            const hasData = workCount > 0;
+
+            return (
+              <Animated.View
+                key={dia.key}
+                entering={FadeInDown.delay(i * 40).duration(200)}
+                style={isWide ? styles.weekItemWide : undefined}
+              >
+                <TouchableOpacity
+                  style={[
+                    styles.dayRow,
+                    isExpanded && styles.dayRowExpanded,
+                    !hasData && styles.dayRowEmpty,
+                  ]}
+                  onPress={() => setSelectedDia(isExpanded ? null : dia.key)}
+                  activeOpacity={0.7}
                 >
-                  <View style={[styles.dayCardHeader, count > 0 && styles.dayCardHeaderActive]}>
-                    <Text style={styles.dayCardTitle}>{dia.label}</Text>
-                    <Text style={styles.dayCardCount}>
-                      {count > 0
-                        ? `${count} trabajan · ${restCount} descansan`
-                        : 'Sin asignar'}
+                  {/* Day name */}
+                  <View style={styles.dayLeft}>
+                    <View style={[styles.dayIndicator, hasData && styles.dayIndicatorActive]} />
+                    <Text style={[styles.dayName, !hasData && styles.dayNameEmpty]}>
+                      {dia.label}
                     </Text>
                   </View>
-                  <View style={styles.dayCardBody}>
-                    {renderDiaContent(dia.key)}
-                  </View>
-                </Animated.View>
-              );
-            })}
-          </View>
-        ) : (
-          <Animated.View entering={FadeInDown.duration(250)}>
-            <View style={styles.singleDayCard}>
-              <View style={styles.singleDayHeader}>
-                <Text style={styles.singleDayTitle}>
-                  {DIAS.find((d) => d.key === selectedDia)?.label}
-                </Text>
-              </View>
-                <View style={styles.singleDayBody}>
-                  {puestos.map((puesto, i) => {
-                  const diaData = asignaciones[selectedDia] || {};
-                  const assigned = diaData[puesto] || [];
-                  const hasAssigned = assigned.length > 0;
-                  return (
-                    <Animated.View
-                      key={puesto}
-                      entering={FadeInDown.delay(i * 40).duration(200)}
-                    >
-                      <View style={[styles.singlePuestoCard, !hasAssigned && styles.singlePuestoCardEmpty]}>
-                        <View style={styles.puestoLabel}>
-                          <View style={[styles.puestoDot, hasAssigned && styles.puestoDotOk]} />
-                          <Text style={styles.puestoName}>{puesto}</Text>
+
+                  {/* Counts */}
+                  <View style={styles.dayRight}>
+                    {hasData ? (
+                      <>
+                        <View style={styles.countPill}>
+                          <Text style={styles.countPillText}>👷 {workCount}</Text>
                         </View>
-                        {hasAssigned ? (
-                          <View style={styles.personasRow}>
-                            {assigned.map((persona) => (
-                              <View key={persona} style={styles.personaChip}>
-                                <Text style={styles.personaChipText}>{persona}</Text>
-                              </View>
-                            ))}
+                        {restCount > 0 && (
+                          <View style={styles.restPill}>
+                            <Text style={styles.restPillText}>😴 {restCount}</Text>
                           </View>
-                        ) : (
-                          <Text style={styles.emptyPuesto}>Sin asignar</Text>
                         )}
-                      </View>
-                    </Animated.View>
-                  );
-                })}
-                  {/* Descansan section for single day */}
-                  {renderDescansan(selectedDia)}
-                </View>
-            </View>
-          </Animated.View>
-        )}
+                      </>
+                    ) : (
+                      <Text style={styles.dayEmptyText}>Sin asignar</Text>
+                    )}
+                    <Text style={styles.chevron}>{isExpanded ? '▲' : '▼'}</Text>
+                  </View>
+                </TouchableOpacity>
+
+                {/* Expanded detail */}
+                {isExpanded && hasData && renderDayDetail(dia.key)}
+              </Animated.View>
+            );
+          })}
+        </View>
       </ScrollView>
+
+      {/* Share buttons — bottom, subtle */}
+      <View style={styles.shareBar}>
+        <TouchableOpacity style={styles.whatsappBtn} onPress={handleShareWhatsApp} activeOpacity={0.8}>
+          <Text style={styles.whatsappBtnText}>📲 Enviar por WhatsApp</Text>
+        </TouchableOpacity>
+        {Platform.OS === 'web' && (
+          <TouchableOpacity style={styles.copyBtn} onPress={handleCopyText} activeOpacity={0.8}>
+            <Text style={styles.copyBtnText}>📋</Text>
+          </TouchableOpacity>
+        )}
+      </View>
     </Animated.View>
   );
 };
