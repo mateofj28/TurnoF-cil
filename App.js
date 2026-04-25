@@ -1,6 +1,16 @@
 import { StatusBar } from 'expo-status-bar';
-import { View, useWindowDimensions } from 'react-native';
+import { View, Text, useWindowDimensions, ActivityIndicator } from 'react-native';
+import {
+  useFonts,
+  Nunito_400Regular,
+  Nunito_500Medium,
+  Nunito_600SemiBold,
+  Nunito_700Bold,
+  Nunito_800ExtraBold,
+  Nunito_900Black,
+} from '@expo-google-fonts/nunito';
 
+import { COLORS } from './src/constants';
 import { usePersistedNav } from './src/hooks';
 import { EmpresasScreen } from './src/screens/EmpresasScreen';
 import { HorariosScreen } from './src/screens/HorariosScreen';
@@ -11,6 +21,15 @@ export default function App() {
   const { width } = useWindowDimensions();
   const isWide = width > 768;
 
+  const [fontsLoaded] = useFonts({
+    Nunito_400Regular,
+    Nunito_500Medium,
+    Nunito_600SemiBold,
+    Nunito_700Bold,
+    Nunito_800ExtraBold,
+    Nunito_900Black,
+  });
+
   const {
     selectedEmpresa,
     selectedHorario,
@@ -19,6 +38,14 @@ export default function App() {
     goBackToHorarios,
     goBackToEmpresas,
   } = usePersistedNav();
+
+  if (!fontsLoaded) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center' }]}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </View>
+    );
+  }
 
   const renderScreen = () => {
     if (selectedEmpresa && selectedHorario) {

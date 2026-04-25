@@ -1,5 +1,5 @@
 import { StyleSheet, Platform } from 'react-native';
-import { COLORS } from '../constants';
+import { COLORS, FONTS } from '../constants';
 
 export const empresasStyles = StyleSheet.create({
   container: {
@@ -7,12 +7,13 @@ export const empresasStyles = StyleSheet.create({
   },
   header: {
     fontSize: 26,
-    fontWeight: '800',
+    fontFamily: FONTS.extraBold,
     color: COLORS.text,
     letterSpacing: -0.5,
   },
   headerSub: {
     fontSize: 14,
+    fontFamily: FONTS.regular,
     color: COLORS.textSecondary,
     marginTop: 2,
     marginBottom: 20,
@@ -32,6 +33,7 @@ export const empresasStyles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
+    fontFamily: FONTS.regular,
     backgroundColor: COLORS.card,
     color: COLORS.text,
     ...Platform.select({
@@ -46,7 +48,7 @@ export const empresasStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     ...Platform.select({
-      web: { boxShadow: '0 2px 8px rgba(79,70,229,0.3)' },
+      web: { boxShadow: '0 2px 8px rgba(91,44,142,0.3)' },
       default: { elevation: 3 },
     }),
   },
@@ -56,7 +58,7 @@ export const empresasStyles = StyleSheet.create({
   addBtnText: {
     color: '#fff',
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
   listContent: {
     paddingBottom: 16,
@@ -72,7 +74,7 @@ export const empresasStyles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
     ...Platform.select({
-      web: { boxShadow: '0 1px 4px rgba(15,23,42,0.06)' },
+      web: { boxShadow: '0 1px 4px rgba(44,24,16,0.06)' },
       default: { elevation: 1 },
     }),
   },
@@ -86,22 +88,23 @@ export const empresasStyles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: COLORS.primaryBg,
+    backgroundColor: COLORS.accentBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
     fontSize: 17,
-    fontWeight: '700',
-    color: COLORS.primary,
+    fontFamily: FONTS.bold,
+    color: COLORS.accent,
   },
   cardTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: FONTS.semiBold,
     color: COLORS.text,
   },
   cardSub: {
     fontSize: 12,
+    fontFamily: FONTS.regular,
     color: COLORS.textMuted,
     marginTop: 1,
   },
@@ -116,7 +119,7 @@ export const empresasStyles = StyleSheet.create({
   removeBtnText: {
     color: COLORS.danger,
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
   emptyState: {
     flex: 1,
@@ -130,6 +133,7 @@ export const empresasStyles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 15,
+    fontFamily: FONTS.regular,
     color: COLORS.textMuted,
     textAlign: 'center',
   },

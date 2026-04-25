@@ -1,5 +1,5 @@
 import { StyleSheet, Platform } from 'react-native';
-import { COLORS } from '../constants';
+import { COLORS, FONTS } from '../constants';
 
 export const navigationStyles = StyleSheet.create({
   navRow: {
@@ -20,7 +20,7 @@ export const navigationStyles = StyleSheet.create({
   },
   navBtnBackText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: FONTS.semiBold,
     color: COLORS.textSecondary,
   },
   navBtnNext: {
@@ -29,7 +29,7 @@ export const navigationStyles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: COLORS.primary,
     ...Platform.select({
-      web: { boxShadow: '0 2px 12px rgba(79,70,229,0.3)' },
+      web: { boxShadow: '0 2px 12px rgba(91,44,142,0.3)' },
       default: { elevation: 3 },
     }),
   },
@@ -38,7 +38,7 @@ export const navigationStyles = StyleSheet.create({
   },
   navBtnNextText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: FONTS.bold,
     color: '#fff',
   },
   navBtnReset: {
@@ -47,7 +47,7 @@ export const navigationStyles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: COLORS.danger,
     ...Platform.select({
-      web: { boxShadow: '0 2px 12px rgba(239,68,68,0.3)' },
+      web: { boxShadow: '0 2px 12px rgba(192,57,43,0.3)' },
       default: { elevation: 3 },
     }),
   },

@@ -1,5 +1,5 @@
 import { StyleSheet, Platform } from 'react-native';
-import { COLORS } from '../constants';
+import { COLORS, FONTS } from '../constants';
 
 export const stepIndicatorStyles = StyleSheet.create({
   stepsRow: {
@@ -28,7 +28,7 @@ export const stepIndicatorStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     ...Platform.select({
-      web: { boxShadow: '0 1px 3px rgba(0,0,0,0.08)' },
+      web: { boxShadow: '0 1px 3px rgba(44,24,16,0.08)' },
       default: { elevation: 1 },
     }),
   },
@@ -36,7 +36,7 @@ export const stepIndicatorStyles = StyleSheet.create({
     borderColor: COLORS.primary,
     backgroundColor: COLORS.primaryBg,
     ...Platform.select({
-      web: { boxShadow: '0 0 0 3px rgba(79,70,229,0.15)' },
+      web: { boxShadow: '0 0 0 3px rgba(91,44,142,0.15)' },
       default: { elevation: 3 },
     }),
   },
@@ -48,23 +48,25 @@ export const stepIndicatorStyles = StyleSheet.create({
     fontSize: 16,
   },
   stepCircleTextActive: {
-    fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
   stepLabel: {
     fontSize: 10,
     color: COLORS.textMuted,
     marginTop: 4,
     textAlign: 'center',
+    fontFamily: FONTS.medium,
   },
   stepLabelWide: {
     fontSize: 11,
     color: COLORS.textMuted,
     marginTop: 4,
     textAlign: 'center',
+    fontFamily: FONTS.medium,
   },
   stepLabelActive: {
     color: COLORS.primary,
-    fontWeight: '600',
+    fontFamily: FONTS.semiBold,
   },
   stepLine: {
     position: 'absolute',

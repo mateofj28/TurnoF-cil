@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { COLORS } from '../constants';
+import { COLORS, FONTS } from '../constants';
 
 export const wizardStyles = StyleSheet.create({
   wrapper: {
@@ -13,7 +13,7 @@ export const wizardStyles = StyleSheet.create({
   },
   backBtnText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: FONTS.semiBold,
     color: COLORS.primary,
   },
   titleRow: {
@@ -23,15 +23,15 @@ export const wizardStyles = StyleSheet.create({
   },
   title: {
     fontSize: 22,
-    fontWeight: '800',
+    fontFamily: FONTS.extraBold,
     color: COLORS.text,
     flex: 1,
     letterSpacing: -0.3,
   },
   stepBadge: {
     fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
+    fontFamily: FONTS.semiBold,
+    color: COLORS.primary,
     backgroundColor: COLORS.primaryBg,
     paddingHorizontal: 10,
     paddingVertical: 4,

@@ -1,5 +1,5 @@
 import { StyleSheet, Platform } from 'react-native';
-import { COLORS } from '../constants';
+import { COLORS, FONTS } from '../constants';
 
 export const inputSectionStyles = StyleSheet.create({
   stepContent: {
@@ -20,6 +20,7 @@ export const inputSectionStyles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
+    fontFamily: FONTS.regular,
     backgroundColor: COLORS.bg,
     color: COLORS.text,
     ...Platform.select({
@@ -34,7 +35,7 @@ export const inputSectionStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     ...Platform.select({
-      web: { boxShadow: '0 2px 8px rgba(79,70,229,0.3)' },
+      web: { boxShadow: '0 2px 8px rgba(91,44,142,0.3)' },
       default: { elevation: 3 },
     }),
   },
@@ -44,7 +45,7 @@ export const inputSectionStyles = StyleSheet.create({
   addBtnText: {
     color: '#fff',
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
   chipCount: {
     marginBottom: 12,
@@ -52,7 +53,7 @@ export const inputSectionStyles = StyleSheet.create({
   chipCountText: {
     fontSize: 13,
     color: COLORS.textMuted,
-    fontWeight: '500',
+    fontFamily: FONTS.medium,
   },
   listContent: {
     paddingBottom: 8,
@@ -61,7 +62,7 @@ export const inputSectionStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: COLORS.bg,
+    backgroundColor: COLORS.card,
     borderRadius: 10,
     padding: 12,
     marginBottom: 8,
@@ -83,12 +84,12 @@ export const inputSectionStyles = StyleSheet.create({
   },
   listAvatarText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: FONTS.bold,
     color: COLORS.primary,
   },
   listCardText: {
     fontSize: 15,
-    fontWeight: '500',
+    fontFamily: FONTS.medium,
     color: COLORS.text,
   },
   removeBtn: {
@@ -102,7 +103,7 @@ export const inputSectionStyles = StyleSheet.create({
   removeBtnText: {
     color: COLORS.danger,
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
   emptyState: {
     flex: 1,
@@ -118,5 +119,6 @@ export const inputSectionStyles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.textMuted,
     textAlign: 'center',
+    fontFamily: FONTS.regular,
   },
 });
